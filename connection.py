@@ -15,7 +15,6 @@ def connect(driver, config):
     #Removing ad
     cloaseAdZone = driver.find_element_by_class_name('openX_int_closeButton')
     closeAdButton = cloaseAdZone.find_element_by_tag_name('a')
-    print(closeAdButton)
     closeAdButton.click()
     driver.find_element_by_id('loginBtn').click()
     #Fill credentials
@@ -24,7 +23,6 @@ def connect(driver, config):
     universeChoice = driver.find_element_by_id('serverLogin')
     universeOptions = universeChoice.find_elements_by_tag_name("option")
     for option in universeOptions:
-        print(option.get_attribute('innerHTML'))
         if config['universe'] in option.get_attribute('innerHTML') :
             option.click()
 
