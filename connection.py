@@ -1,9 +1,5 @@
 import time
 
-# HOME_URL = 'https://us.ogame.gameforge.com/'
-# EMAIL = 'olivia.falcon@gmail.com'
-# PASSWORD = 'leCode'
-# UNIVERSE = 'Quaoar'
 
 
 def connect(driver, config):

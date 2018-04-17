@@ -10,3 +10,6 @@ def navigate_to_tab(driver, tabName):
             pass
 
     tab.click()
+
+def navigate_to_overview(driver):
+    navigate_to_tab(driver, 'overview')
