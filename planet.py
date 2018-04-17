@@ -47,9 +47,11 @@ class Empire():
 def generate_planet(driver, empire):
     #TODO extract planets' name
     planet = Planet('HomeWorld')
+    update_planet_resources(driver, planet)
+    # print(planet.description())
+    empire.add_planet(planet)
+
+def update_planet_resources(driver, planet):
     planet.metal = driver.find_element_by_id('resources_metal').get_attribute('innerHTML')
     planet.cristal = driver.find_element_by_id('resources_crystal').get_attribute('innerHTML')
     planet.deuterium = driver.find_element_by_id('resources_deuterium').get_attribute('innerHTML')
-
-    # print(planet.description())
-    empire.add_planet(planet)
