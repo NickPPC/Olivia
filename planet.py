@@ -18,7 +18,14 @@ class Planet():
     cristalSiloLevel = 0
     deuteriumSiloLevel = 0
     #Facilities buildings
-    #TODO
+    roboticsFactory = 0
+    shipyard = 0
+    researchLab = 0
+    allianceDepot = 0
+    missileSilo = 0
+    naniteFactory = 0
+    terraformer = 0
+    spaceDock = 0
 
     def __init__(self, name):
         self.name = name
