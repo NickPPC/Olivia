@@ -1,4 +1,6 @@
-def navigate_to_tab(driver, tabName):
+from agent import driver
+
+def navigate_to_tab(tabName):
     tab = None
     menu = driver.find_element_by_id('menuTable')
 
@@ -11,5 +13,5 @@ def navigate_to_tab(driver, tabName):
 
     tab.click()
 
-def navigate_to_overview(driver):
+def navigate_to_overview():
     navigate_to_tab(driver, 'overview')

@@ -27,16 +27,25 @@ if __name__ == '__main__':
     with open('config.json') as file:
         config = json.load(file)
     driver = webdriver.Firefox()
-    connection.connect(driver, config)
+    connection.connect(config)
 
+    #State when connecting
     empire = planet.Empire()
-    planet.generate_planet(driver, empire)
-
+    planet.generate_planet(empire)
     print(empire.description())
 
-    buildings.go_to_resources(driver)
-    buildings.extract_resources_buildings_level(driver, empire.planets['HomeWorld'])
-    print(empire.description())
+
+    buildingScheduler = buildings.BuildingScheduler([])
+    print(buildingScheduler.description())
+    print(buildingScheduler.isConstructionSlotAvailable())
+    if not buildingScheduler.isConstructionSlotAvailable():
+        waitTime = buildingScheduler.nextTimeAvailable - time.time() + 3
+        print('Waiting {} s before next construction'.format(waitTime))
+        time.sleep(waitTime)
+    buildings.upgrade_building(driver, buildings.METAL_MINE)
+
+
+
 
     if not args.display:
         driver.quit()

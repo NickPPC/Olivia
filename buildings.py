@@ -1,6 +1,6 @@
 import menu
 import time
-from planet import update_planet_resources
+from agent import driver
 
 RESOURCES = 'resources'
 FACILITIES = 'station'
@@ -49,21 +49,21 @@ buildingTranslation = {
     SPACE_DOCK : (FACILITIES, STATION_BUILDING, 'station36')
 }
 
-def go_to_resources(driver):
+def go_to_resources():
     #TODO: check if already there
-    menu.navigate_to_tab(driver, RESOURCES)
+    menu.navigate_to_tab(RESOURCES)
 
-def go_to_facilities(driver):
+def go_to_facilities():
     # TODO: check if already there
-    menu.navigate_to_tab(driver, FACILITIES)
+    menu.navigate_to_tab(FACILITIES)
 
-def go_to(driver, buildingName):
+def go_to(buildingName):
     if buildingTranslation[buildingName][0] == RESOURCES:
-        go_to_resources(driver)
+        go_to_resources()
     elif buildingTranslation[buildingName][0] == FACILITIES:
-        go_to_facilities(driver)
+        go_to_facilities()
 
-def extract_level_building(driver, buildingName):
+def extract_level_building(buildingName):
 
     text = driver.find_element_by_id(buildingTranslation[buildingName][1])\
         .find_element_by_class_name(buildingTranslation[buildingName][2]) \
@@ -76,7 +76,7 @@ def extract_level_building(driver, buildingName):
 
 
 def extract_resources_buildings_level(driver, planet):
-    go_to_resources(driver)
+    go_to_resources()
     # update_planet_resources(driver, planet)
     #Production
     planet.metalMineLevel = extract_level_building(driver, METAL_MINE)
@@ -89,8 +89,8 @@ def extract_resources_buildings_level(driver, planet):
     planet.cristalSiloLevel = extract_level_building(driver, CRISTAL_MINE)
     planet.deuteriumSiloLevel = extract_level_building(driver, DEUTERIUM_SILO)
 
-def extract_facilities_buildings_level(driver, planet):
-    go_to_facilities(driver)
+def extract_facilities_buildings_level(planet):
+    go_to_facilities()
     planet.roboticsFactory = extract_level_building(driver, ROBOTICS_FACTORY)
     planet.shipyard = extract_level_building(driver,SHIPYARD)
     planet.researchLab = extract_level_building(driver, RESEARCH_LAB)
@@ -100,14 +100,14 @@ def extract_facilities_buildings_level(driver, planet):
     planet.terraformer = extract_level_building(driver, TERRAFORMER)
     planet.spaceDock = extract_level_building(driver, SPACE_DOCK)
 
-def upgrade_building(driver, buildingName):
+def upgrade_building(buildingName):
 
 
     if buildingName not in buildingTranslation:
         print('Error, building is not valid')
         return
 
-    go_to(driver, buildingName)
+    go_to(buildingName)
 
     buildingElement = driver.find_element_by_id(buildingTranslation[buildingName][1])\
         .find_element_by_class_name(buildingTranslation[buildingName][2])
@@ -137,11 +137,11 @@ class BuildingScheduler():
 
     nextTimeAvailable = 0
 
-    def __init__(self, driver, goals):
+    def __init__(self, goals):
         self.goals = goals
-        self.updateTimeAvailability(driver)
+        self.updateTimeAvailability()
 
-    def updateTimeAvailability(self, driver):
+    def updateTimeAvailability(self):
         menu.navigate_to_overview(driver)
         try:
             timeLeft = driver.find_element_by_id('Countdown').get_attribute('innerHTML')

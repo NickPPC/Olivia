@@ -1,8 +1,9 @@
 import time
+from agent import driver
 
 
 
-def connect(driver, config):
+def connect(config):
     #homepage
     driver.get(config['homeUrl'])
     #Open login menu

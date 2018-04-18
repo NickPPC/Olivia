@@ -1,3 +1,6 @@
+from agent import driver
+from buildings import extract_resources_buildings_level, extract_facilities_buildings_level
+
 class Planet():
     name = None
     #Resources
@@ -29,6 +32,18 @@ class Planet():
 
     def __init__(self, name):
         self.name = name
+        self.update_planet_resources()
+        self.update_buildings_level()
+
+    def update_buildings_level(self):
+        extract_resources_buildings_level(self)
+        extract_facilities_buildings_level(self)
+
+
+    def update_planet_resources(self):
+        self.metal = driver.find_element_by_id('resources_metal').get_attribute('innerHTML')
+        self.cristal = driver.find_element_by_id('resources_crystal').get_attribute('innerHTML')
+        self.deuterium = driver.find_element_by_id('resources_deuterium').get_attribute('innerHTML')
 
     def description(self):
         attrs = vars(self)
@@ -51,14 +66,8 @@ class Empire():
         return description
 
 
-def generate_planet(driver, empire):
+def generate_planet(empire):
     #TODO extract planets' name
     planet = Planet('HomeWorld')
-    update_planet_resources(driver, planet)
-    # print(planet.description())
     empire.add_planet(planet)
 
-def update_planet_resources(driver, planet):
-    planet.metal = driver.find_element_by_id('resources_metal').get_attribute('innerHTML')
-    planet.cristal = driver.find_element_by_id('resources_crystal').get_attribute('innerHTML')
-    planet.deuterium = driver.find_element_by_id('resources_deuterium').get_attribute('innerHTML')
