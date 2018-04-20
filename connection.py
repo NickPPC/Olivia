@@ -1,6 +1,6 @@
 import time
-from agent import driver
 
+driver = None
 
 
 def connect(config):

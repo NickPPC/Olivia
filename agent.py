@@ -2,15 +2,13 @@ import argparse
 import time
 from selenium import webdriver
 from pyvirtualdisplay import Display
-import connection
 import json
+import connection
 import planet
 import buildings
+import menu
 
 
-driver = None
-config = None
-empire = None
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-d", "--display", action="store_true", help="set display of what is happening")
@@ -27,6 +25,12 @@ if __name__ == '__main__':
     with open('config.json') as file:
         config = json.load(file)
     driver = webdriver.Firefox()
+
+    connection.driver = driver
+    buildings.driver = driver
+    planet.driver = driver
+    menu.driver = driver
+
     connection.connect(config)
 
     #State when connecting
@@ -37,12 +41,29 @@ if __name__ == '__main__':
 
     buildingScheduler = buildings.BuildingScheduler([])
     print(buildingScheduler.description())
-    print(buildingScheduler.isConstructionSlotAvailable())
-    if not buildingScheduler.isConstructionSlotAvailable():
-        waitTime = buildingScheduler.nextTimeAvailable - time.time() + 3
-        print('Waiting {} s before next construction'.format(waitTime))
-        time.sleep(waitTime)
-    buildings.upgrade_building(driver, buildings.METAL_MINE)
+    # buildingScheduler.waitUntilConstructionSlotAvailable()
+    # buildings.upgrade_building(buildings.SHIPYARD)
+    # buildingScheduler.updateTimeAvailability()
+    buildingScheduler.waitUntilConstructionSlotAvailable()
+    buildings.upgrade_building(buildings.SOLAR_PLANT)
+    buildingScheduler.updateTimeAvailability()
+    buildingScheduler.waitUntilConstructionSlotAvailable()
+    buildings.upgrade_building(buildings.CRISTAL_MINE)
+    buildingScheduler.updateTimeAvailability()
+    buildingScheduler.waitUntilConstructionSlotAvailable()
+    buildings.upgrade_building(buildings.RESEARCH_LAB)
+    # buildingScheduler.updateTimeAvailability()
+    # buildingScheduler.waitUntilConstructionSlotAvailable()
+    # buildings.upgrade_building(buildings.RESEARCH_LAB)
+    # buildingScheduler.updateTimeAvailability()
+    # buildingScheduler.waitUntilConstructionSlotAvailable()
+    # buildings.upgrade_building(buildings.METAL_MINE)
+    # buildingScheduler.updateTimeAvailability()
+    # buildingScheduler.waitUntilConstructionSlotAvailable()
+    # buildings.upgrade_building(buildings.SOLAR_PLANT)
+
+
+
 
 
 

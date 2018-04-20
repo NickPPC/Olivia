@@ -1,7 +1,8 @@
 import menu
 import time
-from agent import driver
 
+
+driver = None
 RESOURCES = 'resources'
 FACILITIES = 'station'
 
@@ -67,41 +68,49 @@ def extract_level_building(buildingName):
 
     text = driver.find_element_by_id(buildingTranslation[buildingName][1])\
         .find_element_by_class_name(buildingTranslation[buildingName][2]) \
-        .find_element_by_class_name('level').get_attribute('innerHTML')
+        .find_element_by_class_name('level').get_attribute('innerHTML').strip()
 
-    if '<span' in text:
-        return int(text.split('>')[2].strip())
-    else:
-        return int(text)
+    while '<' in text:
+        i = text.find('<')
+        j = text.find('>')
+        if i == 0:
+            text = text[j+1:]
+            text = text[text.find('>')+1:]
+        else:
+            text = text[:i-1]
+        text.strip()
+    return int(text)
 
 
-def extract_resources_buildings_level(driver, planet):
+
+
+def extract_resources_buildings_level(planet):
     go_to_resources()
-    # update_planet_resources(driver, planet)
+    # update_planet_resources(planet)
     #Production
-    planet.metalMineLevel = extract_level_building(driver, METAL_MINE)
-    planet.cristalMineLevel = extract_level_building(driver, CRISTAL_MINE)
-    planet.deuteriumMineLevel = extract_level_building(driver, DEUTERIUM_MINE)
-    planet.solarPlantLevel = extract_level_building(driver, SOLAR_PLANT)
-    planet.fissionPlantLevel = extract_level_building(driver, FISSION_PLANT)
+    planet.metalMineLevel = extract_level_building(METAL_MINE)
+    planet.cristalMineLevel = extract_level_building(CRISTAL_MINE)
+    planet.deuteriumMineLevel = extract_level_building(DEUTERIUM_MINE)
+    planet.solarPlantLevel = extract_level_building(SOLAR_PLANT)
+    planet.fissionPlantLevel = extract_level_building(FISSION_PLANT)
     #Storage
-    planet.metalSiloLevel = extract_level_building(driver, METAL_SILO)
-    planet.cristalSiloLevel = extract_level_building(driver, CRISTAL_MINE)
-    planet.deuteriumSiloLevel = extract_level_building(driver, DEUTERIUM_SILO)
+    planet.metalSiloLevel = extract_level_building(METAL_SILO)
+    planet.cristalSiloLevel = extract_level_building(CRISTAL_MINE)
+    planet.deuteriumSiloLevel = extract_level_building(DEUTERIUM_SILO)
 
 def extract_facilities_buildings_level(planet):
     go_to_facilities()
-    planet.roboticsFactory = extract_level_building(driver, ROBOTICS_FACTORY)
-    planet.shipyard = extract_level_building(driver,SHIPYARD)
-    planet.researchLab = extract_level_building(driver, RESEARCH_LAB)
-    planet.allianceDepot = extract_level_building(driver, ALLIANCE_DEPOT)
-    planet.missileSilo = extract_level_building(driver, MISSILE_SILO)
-    planet.naniteFactory = extract_level_building(driver, NANITE_FACTORY)
-    planet.terraformer = extract_level_building(driver, TERRAFORMER)
-    planet.spaceDock = extract_level_building(driver, SPACE_DOCK)
+    planet.roboticsFactory = extract_level_building(ROBOTICS_FACTORY)
+    planet.shipyard = extract_level_building(SHIPYARD)
+    planet.researchLab = extract_level_building(RESEARCH_LAB)
+    planet.allianceDepot = extract_level_building(ALLIANCE_DEPOT)
+    planet.missileSilo = extract_level_building(MISSILE_SILO)
+    planet.naniteFactory = extract_level_building(NANITE_FACTORY)
+    planet.terraformer = extract_level_building(TERRAFORMER)
+    planet.spaceDock = extract_level_building(SPACE_DOCK)
 
 def upgrade_building(buildingName):
-
+    #TODO: update scheduler at the end
 
     if buildingName not in buildingTranslation:
         print('Error, building is not valid')
@@ -142,7 +151,7 @@ class BuildingScheduler():
         self.updateTimeAvailability()
 
     def updateTimeAvailability(self):
-        menu.navigate_to_overview(driver)
+        menu.navigate_to_overview()
         try:
             timeLeft = driver.find_element_by_id('Countdown').get_attribute('innerHTML')
             #Parsing
@@ -165,6 +174,11 @@ class BuildingScheduler():
         except Exception as e:
             print(str(e))
 
+    def waitUntilConstructionSlotAvailable(self):
+        if not self.isConstructionSlotAvailable():
+            waitTime = self.nextTimeAvailable - time.time() + 3
+            print('Waiting {} s before next construction'.format(waitTime))
+            time.sleep(waitTime)
 
     def isConstructionSlotAvailable(self):
         return time.time() > self.nextTimeAvailable

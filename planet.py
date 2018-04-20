@@ -1,5 +1,6 @@
-from agent import driver
 from buildings import extract_resources_buildings_level, extract_facilities_buildings_level
+
+driver = None
 
 class Planet():
     name = None
