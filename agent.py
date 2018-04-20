@@ -7,7 +7,11 @@ import connection
 import planet
 import buildings
 import menu
+import research
+import fleet
+import shipyard
 
+#TODO:logging
 
 
 parser = argparse.ArgumentParser()
@@ -30,6 +34,9 @@ if __name__ == '__main__':
     buildings.driver = driver
     planet.driver = driver
     menu.driver = driver
+    research.driver = driver
+    fleet.driver = driver
+    shipyard.driver = driver
 
     connection.connect(config)
 

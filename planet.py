@@ -48,7 +48,7 @@ class Planet():
 
     def description(self):
         attrs = vars(self)
-        return ', '.join("%s: %s" % item for item in attrs.items())
+        return '\n'.join("%s: %s" % item for item in attrs.items())
 
 
 
@@ -56,19 +56,20 @@ class Empire():
     
     def __init__(self):
         self.planets = {}
+        #TODO: initialize with all planets
 
     def add_planet(self, planet):
         self.planets[planet.name] = planet
 
+    def generate_planet(self):
+        # TODO extract planets' name
+        planet = Planet('HomeWorld')
+        self.add_planet(planet)
+
     def description(self):
-        description = ""
-        for p in self.planets:
-            description += "{} : {}".format(p, self.planets[p].description())
+        description = ('\n' + 20 *'*' + '\n').join(self.planets.values())
         return description
 
 
-def generate_planet(empire):
-    #TODO extract planets' name
-    planet = Planet('HomeWorld')
-    empire.add_planet(planet)
+
 
