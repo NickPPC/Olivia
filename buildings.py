@@ -51,11 +51,9 @@ buildingTranslation = {
 }
 
 def go_to_resources():
-    #TODO: check if already there
     menu.navigate_to_tab(RESOURCES)
 
 def go_to_facilities():
-    # TODO: check if already there
     menu.navigate_to_tab(FACILITIES)
 
 def go_to(buildingName):

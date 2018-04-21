@@ -46,7 +46,7 @@ class Planet():
         self.cristal = driver.find_element_by_id('resources_crystal').get_attribute('innerHTML')
         self.deuterium = driver.find_element_by_id('resources_deuterium').get_attribute('innerHTML')
 
-    def description(self):
+    def __str__(self):
         attrs = vars(self)
         return '\n'.join("%s: %s" % item for item in attrs.items())
 
@@ -66,8 +66,8 @@ class Empire():
         planet = Planet('HomeWorld')
         self.add_planet(planet)
 
-    def description(self):
-        description = ('\n' + 20 *'*' + '\n').join(self.planets.values())
+    def __str__(self):
+        description = ('\n' + 20 *'*' + '\n').join(map(str, self.planets.values()))
         return description
 
 

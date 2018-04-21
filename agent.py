@@ -42,8 +42,8 @@ if __name__ == '__main__':
 
     #State when connecting
     empire = planet.Empire()
-    planet.generate_planet(empire)
-    print(empire.description())
+    empire.generate_planet()
+    print(empire)
 
 
     buildingScheduler = buildings.BuildingScheduler([])
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     # buildings.upgrade_building(buildings.SHIPYARD)
     # buildingScheduler.updateTimeAvailability()
     buildingScheduler.waitUntilConstructionSlotAvailable()
-    buildings.upgrade_building(buildings.SOLAR_PLANT)
+    buildings.upgrade_building(buildings.CRISTAL_MINE)
     buildingScheduler.updateTimeAvailability()
     buildingScheduler.waitUntilConstructionSlotAvailable()
     buildings.upgrade_building(buildings.CRISTAL_MINE)
