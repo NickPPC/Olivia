@@ -10,9 +10,12 @@ def connect(config):
 
     time.sleep(1)
     #Removing ad
-    cloaseAdZone = driver.find_element_by_class_name('openX_int_closeButton')
-    closeAdButton = cloaseAdZone.find_element_by_tag_name('a')
-    closeAdButton.click()
+    try:
+        cloaseAdZone = driver.find_element_by_class_name('openX_int_closeButton')
+        closeAdButton = cloaseAdZone.find_element_by_tag_name('a')
+        closeAdButton.click()
+    except:
+        pass
     driver.find_element_by_id('loginBtn').click()
     #Fill credentials
     driver.find_element_by_id('usernameLogin').send_keys(config['email'])
