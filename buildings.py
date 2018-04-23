@@ -64,7 +64,7 @@ def go_to(buildingName):
 
 def extract_level_building(buildingName):
 
-    text = driver.find_element_by_id(buildingTranslation[buildingName][1])\
+    text = driver.find_element_by_id(buildingTranslation[buildingName][1]) \
         .find_element_by_class_name(buildingTranslation[buildingName][2]) \
         .find_element_by_class_name('level').get_attribute('innerHTML').strip()
 
@@ -72,26 +72,23 @@ def extract_level_building(buildingName):
         i = text.find('<')
         j = text.find('>')
         if i == 0:
-            text = text[j+1:]
-            text = text[text.find('>')+1:]
+            text = text[j + 1:]
+            text = text[text.find('>') + 1:]
         else:
-            text = text[:i-1]
+            text = text[:i - 1]
         text.strip()
     return int(text)
-
-
-
 
 def extract_resources_buildings_level(planet):
     go_to_resources()
     # update_planet_resources(planet)
-    #Production
+    # Production
     planet.metalMineLevel = extract_level_building(METAL_MINE)
     planet.cristalMineLevel = extract_level_building(CRISTAL_MINE)
     planet.deuteriumMineLevel = extract_level_building(DEUTERIUM_MINE)
     planet.solarPlantLevel = extract_level_building(SOLAR_PLANT)
     planet.fissionPlantLevel = extract_level_building(FISSION_PLANT)
-    #Storage
+    # Storage
     planet.metalSiloLevel = extract_level_building(METAL_SILO)
     planet.cristalSiloLevel = extract_level_building(CRISTAL_MINE)
     planet.deuteriumSiloLevel = extract_level_building(DEUTERIUM_SILO)
@@ -107,24 +104,7 @@ def extract_facilities_buildings_level(planet):
     planet.terraformer = extract_level_building(TERRAFORMER)
     planet.spaceDock = extract_level_building(SPACE_DOCK)
 
-def upgrade_building(buildingName):
-    #TODO: update scheduler at the end
 
-    if buildingName not in buildingTranslation:
-        print('Error, building is not valid')
-        return
-
-    go_to(buildingName)
-
-    buildingElement = driver.find_element_by_id(buildingTranslation[buildingName][1])\
-        .find_element_by_class_name(buildingTranslation[buildingName][2])
-    if buildingTranslation[buildingName][0] == RESOURCES:
-        buildingElement.find_element_by_id('details').click()
-    elif buildingTranslation[buildingName][0] == FACILITIES:
-        buildingElement.find_element_by_id('details'+buildingTranslation[buildingName][2][-2:]).click()
-
-    time.sleep(3)
-    driver.find_element_by_class_name('build-it').click()
 
 class BuildingGoal():
 
@@ -144,7 +124,8 @@ class BuildingScheduler():
 
     nextTimeAvailable = 0
 
-    def __init__(self, goals):
+    def __init__(self, planet, goals):
+        self.planet = planet
         self.goals = goals
         self.updateTimeAvailability()
 
@@ -183,11 +164,39 @@ class BuildingScheduler():
 
     #TODO
     def isConstructionAffordable(self):
+        self.planet.update_planet_resources()
         return True
 
     def isConstructionPossible(self):
         return self.isConstructionSlotAvailable() and self.isConstructionAffordable()
 
-    def description(self):
-        attrs = vars(self)
-        return ', '.join("%s: %s" % item for item in attrs.items())
+
+    def upgrade_building(self, buildingName):
+
+        if buildingName not in buildingTranslation:
+            print('Error, building is not valid')
+            return
+
+        self.waitUntilConstructionSlotAvailable()
+
+        #TODO: in scheduler deal with no money case
+        if self.isConstructionPossible():
+
+            go_to(buildingName)
+
+            buildingElement = driver.find_element_by_id(buildingTranslation[buildingName][1]) \
+                .find_element_by_class_name(buildingTranslation[buildingName][2])
+            if buildingTranslation[buildingName][0] == RESOURCES:
+                buildingElement.find_element_by_id('details').click()
+            elif buildingTranslation[buildingName][0] == FACILITIES:
+                buildingElement.find_element_by_id('details' + buildingTranslation[buildingName][2][-2:]).click()
+
+            time.sleep(3)
+            driver.find_element_by_class_name('build-it').click()
+            #TODO: improve by using construction time extracted when building
+            self.updateTimeAvailability()
+        else:
+            print('Impossible to upgrade this building')
+
+    def __str__(self):
+        return ', '.join(map(str, self.goals))
