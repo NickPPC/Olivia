@@ -1,6 +1,6 @@
 import menu
 import time
-
+import planet
 
 driver = None
 RESOURCES = 'resources'
@@ -155,7 +155,7 @@ class BuildingScheduler():
 
     def waitUntilConstructionSlotAvailable(self):
         if not self.isConstructionSlotAvailable():
-            waitTime = self.nextTimeAvailable - time.time() + 3
+            waitTime = int(self.nextTimeAvailable - time.time() + 3)
             print('Waiting {} s before next construction'.format(waitTime))
             time.sleep(waitTime)
 
@@ -170,6 +170,40 @@ class BuildingScheduler():
     def isConstructionPossible(self):
         return self.isConstructionSlotAvailable() and self.isConstructionAffordable()
 
+    def clickBuildingElement(self, buildingName):
+
+        go_to(buildingName)
+
+        buildingElement = driver.find_element_by_id(buildingTranslation[buildingName][1]) \
+            .find_element_by_class_name(buildingTranslation[buildingName][2])
+        if buildingTranslation[buildingName][0] == RESOURCES:
+            buildingElement.find_element_by_id('details').click()
+        elif buildingTranslation[buildingName][0] == FACILITIES:
+            buildingElement.find_element_by_id('details' + buildingTranslation[buildingName][2][-2:]).click()
+
+    def getBuildingCost(self, buildingName=None):
+
+        if buildingName is not None:
+            self.clickBuildingElement(buildingName)
+            time.sleep(2)
+        cost = {planet.METAL : 0, planet.CRISTAL : 0, planet.DEUTERIUM : 0}
+        costList = driver.find_element_by_id('costs')
+        try:
+            cost[planet.METAL] = costList.find_element_by_class_name('metal').find_element_by_class_name('cost').get_attribute('innerHTML')
+        except:
+            pass
+        try:
+            cost[planet.CRISTAL] = costList.find_element_by_class_name('crystal').find_element_by_class_name('cost').get_attribute('innerHTML')
+        except:
+            pass
+        try:
+            cost[planet.DEUTERIUM] = costList.find_element_by_class_name('deuterium').find_element_by_class_name('cost').get_attribute('innerHTML')
+        except:
+            pass
+
+        return cost
+
+
 
     def upgrade_building(self, buildingName):
 
@@ -182,19 +216,15 @@ class BuildingScheduler():
         #TODO: in scheduler deal with no money case
         if self.isConstructionPossible():
 
-            go_to(buildingName)
-
-            buildingElement = driver.find_element_by_id(buildingTranslation[buildingName][1]) \
-                .find_element_by_class_name(buildingTranslation[buildingName][2])
-            if buildingTranslation[buildingName][0] == RESOURCES:
-                buildingElement.find_element_by_id('details').click()
-            elif buildingTranslation[buildingName][0] == FACILITIES:
-                buildingElement.find_element_by_id('details' + buildingTranslation[buildingName][2][-2:]).click()
-
+            self.clickBuildingElement(buildingName)
             time.sleep(3)
+            cost = self.getBuildingCost()
+
             driver.find_element_by_class_name('build-it').click()
             #TODO: improve by using construction time extracted when building
             self.updateTimeAvailability()
+
+            print('{} construction started for {}'.format(buildingName, cost))
         else:
             print('Impossible to upgrade this building')
 

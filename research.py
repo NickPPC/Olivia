@@ -1,5 +1,6 @@
 import time
 import menu
+import planet
 
 driver = None
 
@@ -124,6 +125,35 @@ class ResearchScheduler():
     def isResearchSlotAvailable(self):
         return time.time() > self.nextTimeAvailable
 
+    def clickTechElement(self, techName):
+        go_to_research()
+        driver.find_element_by_id(researchTranslation[techName]).click()
+
+    def getTechCost(self, techName=None):
+        if techName is not None:
+            self.clickTechElement(techName)
+            time.sleep(3)
+
+        cost = {planet.METAL: 0, planet.CRISTAL: 0, planet.DEUTERIUM: 0}
+        costList = driver.find_element_by_id('costs')
+        try:
+            cost[planet.METAL] = costList.find_element_by_class_name('metal').find_element_by_class_name('cost').get_attribute(
+                'innerHTML')
+        except:
+            pass
+        try:
+            cost[planet.CRISTAL] = costList.find_element_by_class_name('crystal').find_element_by_class_name(
+                'cost').get_attribute('innerHTML')
+        except:
+            pass
+        try:
+            cost[planet.DEUTERIUM] = costList.find_element_by_class_name('deuterium').find_element_by_class_name(
+                'cost').get_attribute('innerHTML')
+        except:
+            pass
+
+        return cost
+
     def researchTech(self, techName):
         if techName not in researchTranslation:
             print('Error, building is not valid')
@@ -133,12 +163,13 @@ class ResearchScheduler():
 
         try:
 
-            go_to_research()
-
-            driver.find_element_by_id(researchTranslation[techName]).click()
+            self.clickTechElement(techName)
             time.sleep(3)
+            cost = self.getTechCost()
+
             driver.find_element_by_class_name('build-it').click()
             # TODO: improve by using construction time extracted when building
             self.updateTimeAvailability()
+            print('{} research started for {}'.format(techName, cost))
         except Exception as e:
-            print('Impossible to upgrade this building : {}'.format(str(e)))
+            print('Impossible to do this research {} : {}'.format(techName, str(e)))

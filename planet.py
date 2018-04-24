@@ -2,6 +2,10 @@ from buildings import extract_facilities_buildings_level, extract_resources_buil
 from research import extract_research_level
 driver = None
 
+METAL = 'metal'
+CRISTAL = 'cristal'
+DEUTERIUM = 'deuterium'
+
 class Planet():
     name = None
     #Resources
