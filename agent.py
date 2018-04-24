@@ -10,12 +10,15 @@ import menu
 import research
 import fleet
 import shipyard
+import scheduler
 
 #TODO:logging
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-d", "--display", action="store_true", help="set display of what is happening")
+parser.add_argument("-f", "--configFile", help="path to the JSON config file", default='config.json')
+
 
 
 if __name__ == '__main__':
@@ -23,10 +26,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if not args.display:
-        display = Display(visible=0, size=(800, 600))
+        display = Display(visible=0, size=(1280, 1024))
         display.start()
 
-    with open('config.json') as file:
+    with open(args.configFile) as file:
         config = json.load(file)
     driver = webdriver.Firefox()
 
@@ -41,40 +44,28 @@ if __name__ == '__main__':
     connection.connect(config)
 
     #State when connecting
-    empire = planet.Empire()
-    empire.generate_planet()
-    print(empire)
+    masterScheduler = scheduler.MasterScheduler(config)
+    print(masterScheduler.empire)
 
 
-    buildingScheduler = buildings.BuildingScheduler([])
-    print(buildingScheduler.description())
-    # buildingScheduler.waitUntilConstructionSlotAvailable()
-    # buildings.upgrade_building(buildings.SHIPYARD)
-    # buildingScheduler.updateTimeAvailability()
-    buildingScheduler.waitUntilConstructionSlotAvailable()
-    buildings.upgrade_building(buildings.CRISTAL_MINE)
-    buildingScheduler.updateTimeAvailability()
-    buildingScheduler.waitUntilConstructionSlotAvailable()
-    buildings.upgrade_building(buildings.CRISTAL_MINE)
-    buildingScheduler.updateTimeAvailability()
-    buildingScheduler.waitUntilConstructionSlotAvailable()
-    buildings.upgrade_building(buildings.RESEARCH_LAB)
-    # buildingScheduler.updateTimeAvailability()
-    # buildingScheduler.waitUntilConstructionSlotAvailable()
-    # buildings.upgrade_building(buildings.RESEARCH_LAB)
-    # buildingScheduler.updateTimeAvailability()
-    # buildingScheduler.waitUntilConstructionSlotAvailable()
-    # buildings.upgrade_building(buildings.METAL_MINE)
-    # buildingScheduler.updateTimeAvailability()
-    # buildingScheduler.waitUntilConstructionSlotAvailable()
-    # buildings.upgrade_building(buildings.SOLAR_PLANT)
-
-
-
+    # masterScheduler.researchScheduler.researchTech(research.ASTROPHYSICS_TECH)
+    # masterScheduler.researchScheduler.researchTech(research.ASTROPHYSICS_TECH)
+    # masterScheduler.researchScheduler.researchTech(research.WEAPONS_TECH)
+    # masterScheduler.researchScheduler.researchTech(research.WEAPONS_TECH)
+    #
+    #
+    #
+    #
+    #
+    # masterScheduler.buildingSchedulers[0].upgrade_building(buildings.CRISTAL_SILO)
+    # masterScheduler.buildingSchedulers[0].upgrade_building(buildings.DEUTERIUM_SILO)
+    # masterScheduler.buildingSchedulers[0].upgrade_building(buildings.SHIPYARD)
 
 
 
 
     if not args.display:
         driver.quit()
+        display.stop()
+
 
