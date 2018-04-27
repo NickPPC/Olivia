@@ -1,10 +1,14 @@
-from buildings import extract_facilities_buildings_level, extract_resources_buildings_level
+import logging
+
+from buildings import extract_facilities_buildings_level, extract_resources_buildings_level, BuildingScheduler
 from research import extract_research_level
+from research import ResearchScheduler
+import menu
+from utils import get_module_logger
 driver = None
 
-METAL = 'metal'
-CRISTAL = 'cristal'
-DEUTERIUM = 'deuterium'
+log = get_module_logger(__name__)
+
 
 class Planet():
     name = None
@@ -38,8 +42,9 @@ class Planet():
 
     def __init__(self, name):
         self.name = name
-        self.update_planet_resources()
-        self.update_buildings_level()
+        self.full_update()
+        self.buildingScheduler = BuildingScheduler(name)
+        self.researchScheduler = ResearchScheduler(self, [])
 
     def update_buildings_level(self):
         extract_resources_buildings_level(self)
@@ -47,11 +52,15 @@ class Planet():
 
 
     def update_planet_resources(self):
-        self.metal = driver.find_element_by_id('resources_metal').get_attribute('innerHTML')
-        self.cristal = driver.find_element_by_id('resources_crystal').get_attribute('innerHTML')
-        self.deuterium = driver.find_element_by_id('resources_deuterium').get_attribute('innerHTML')
-        self.energy = driver.find_element_by_id('resources_energy').get_attribute('innerHTML')
+        self.metal = int(driver.find_element_by_id('resources_metal').get_attribute('innerHTML').replace('.', ''))
+        self.cristal = int(driver.find_element_by_id('resources_crystal').get_attribute('innerHTML').replace('.', ''))
+        self.deuterium = int(driver.find_element_by_id('resources_deuterium').get_attribute('innerHTML').replace('.', ''))
+        self.energy = int(driver.find_element_by_id('resources_energy').get_attribute('innerHTML').replace('.', ''))
 
+    def full_update(self):
+        menu.navigate_to_planet(self.name)
+        self.update_planet_resources()
+        self.update_buildings_level()
 
     def __str__(self):
         attrs = vars(self)
@@ -81,24 +90,25 @@ class Empire():
     
     def __init__(self):
         self.planets = {}
-        self.generate_planet()
+        self.generate_planets()
         self.update_research_level()
         #TODO: initialize with all planets
 
     def add_planet(self, planet):
         self.planets[planet.name] = planet
 
-    def generate_planet(self):
-        # TODO extract planets' name
-        planet = Planet('HomeWorld')
-        self.add_planet(planet)
+    def generate_planets(self):
+        planetNames = menu.list_planets()
+        for planetName in planetNames:
+            planet = Planet(planetName)
+            self.add_planet(planet)
 
     def update_research_level(self):
         extract_research_level(self)
 
 
     def __str__(self):
-        description = ('\n' + 20 *'*' + '\n').join(map(str, self.planets.values()))
+        description = ('\n\n' + 20 *'*' + '\n\n').join(map(str, self.planets.values()))
         return description
 
 
