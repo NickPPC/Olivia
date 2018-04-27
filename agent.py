@@ -19,6 +19,7 @@ log = utils.get_module_logger(__name__)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-d", "--display", action="store_true", help="set display of what is happening")
+parser.add_argument("-m", "--manual", action="store_true", help="Manual mode, does not start scheduler")
 parser.add_argument("-f", "--configFile", help="path to the JSON config file", default='config.json')
 
 
@@ -49,21 +50,9 @@ if __name__ == '__main__':
     #State when connecting
     masterScheduler = scheduler.MasterScheduler(config)
     log.info(masterScheduler.empire)
-    # masterScheduler.run()
+    if not args.manual:
+        masterScheduler.run()
 
-
-    # masterScheduler.researchScheduler.researchTech(research.ASTROPHYSICS_TECH)
-    # masterScheduler.researchScheduler.researchTech(research.ASTROPHYSICS_TECH)
-    # masterScheduler.researchScheduler.researchTech(research.WEAPONS_TECH)
-    # masterScheduler.researchScheduler.researchTech(research.WEAPONS_TECH)
-    #
-    #
-    #
-    #
-    #
-    # masterScheduler.buildingSchedulers[0].upgrade_building(buildings.CRISTAL_SILO)
-    # masterScheduler.buildingSchedulers[0].upgrade_building(buildings.DEUTERIUM_SILO)
-    # masterScheduler.buildingSchedulers[0].upgrade_building(buildings.SHIPYARD)
 
 
 
