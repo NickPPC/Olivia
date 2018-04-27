@@ -1,4 +1,5 @@
 import argparse
+import logging
 import time
 from selenium import webdriver
 from pyvirtualdisplay import Display
@@ -11,8 +12,9 @@ import research
 import fleet
 import shipyard
 import scheduler
+import utils
 
-#TODO:logging
+log = utils.get_module_logger(__name__)
 
 
 parser = argparse.ArgumentParser()
@@ -33,6 +35,7 @@ if __name__ == '__main__':
         config = json.load(file)
     driver = webdriver.Firefox()
 
+
     connection.driver = driver
     buildings.driver = driver
     planet.driver = driver
@@ -45,7 +48,8 @@ if __name__ == '__main__':
 
     #State when connecting
     masterScheduler = scheduler.MasterScheduler(config)
-    print(masterScheduler.empire)
+    log.info(masterScheduler.empire)
+    # masterScheduler.run()
 
 
     # masterScheduler.researchScheduler.researchTech(research.ASTROPHYSICS_TECH)
