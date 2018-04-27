@@ -1,32 +1,221 @@
+import logging
+import random
 import planet
 import research
 import buildings
 import fleet
+import time
+from utils import *
+
+random.seed()
+currentTaskId = 0
+
+log = get_module_logger(__name__)
 
 
-#TODO
+def generateTaskId():
+    global currentTaskId
+    currentTaskId +=1
+    return currentTaskId
+
+class Event():
+
+    BUILDING_IN_PROGRESS = 'Building in progress'
+    RESEARCH_IN_PROGRESS = 'Research in progress'
+    FLEET_ARRIVING = 'Fleet arriving'
+    NO_MONEY = 'Not enough resources'
+    ERROR = 'Error !!'
+    #TODO: create more event type (attacks, ...)
+
+    def __init__(self, type, duration, planetName, description=''):
+        log.debug('Event creation : {} , {}, {}, {}'.format(type, duration, planetName, description))
+        self.type = type
+        self.creationTime = time.time()
+        self.duration = duration
+        self.description = description
+        self.planetName = planetName
+
+    def getComplitionTime(self):
+        return self.creationTime + self.duration
+
+    def getRemainingTime(self):
+        return  self.duration - (time.time() - self.creationTime)
+
+
+    def __str__(self):
+        result = '{} started {} ago, finishing in {} on planet {}'\
+            .format(self.type, seconds_to_formatted_time(self.creationTime - time.time()),
+                                                seconds_to_formatted_time(self.getRemainingTime()), self.planetName)
+
+        if self.description != '':
+            result = '{} : {}'.format(result, self.description)
+
+        return result
+
+class Goal():
+
+    def __init__(self, object, level, planet, priority, count=1):
+        self.object = object
+        self.level = level
+        self.planet = planet
+        self.priority = priority
+        self.count = count
+
+    @staticmethod
+    def getType(object):
+        if object in buildings.buildingTranslation:
+            return buildings.BUILDINGS
+        elif object in research.researchTranslation:
+            return research.RESEARCH
+        #TODO: fleet/defense
+
+    def generateTasks(self):
+
+        # TODO: cascade requirement as new goal
+        resultingTasks = [Task(self.object, self.planet, self.priority, self.count)]
+        log.debug('Goal {} translated in {} tasks'.format(str(self), len(resultingTasks)))
+        return resultingTasks
+
+class Task():
+
+    def __init__(self, object, planet, priority, count):
+        self.object = object
+        self.planet = planet
+        self.priority = priority
+        self.count = count
+        self.cost = None
+        self.id = generateTaskId()
+    # TODO : take into account priority
+    # TODO: add dependencies
+
+    def execute(self):
+        if Goal.getType(self.object) == buildings.BUILDINGS:
+            return self.planet.buildingScheduler.upgrade_building(self.object)
+        #TODO:other cases (research, fleet ...)
+
+    def price(self):
+        if Goal.getType(self.object) == buildings.BUILDINGS:
+            self.cost = self.planet.buildingScheduler.getBuildingCost(self.object)
+
+    def isAffordable(self):
+        self.planet.update_planet_resources()
+        if METAL in self.cost and self.cost[METAL] > self.planet.metal:
+            return False
+        if CRISTAL in self.cost and self.cost[CRISTAL] > self.planet.cristal:
+            return False
+        if DEUTERIUM in self.cost and self.cost[DEUTERIUM] > self.planet.deuterium:
+            return False
+
+        return True
 
 
 class MasterScheduler():
 
 
-    def __init__(self, configFile):
+    def __init__(self, configs):
         self.empire = planet.Empire()
-        self.buildingSchedulers = self.init_building_schedulers(configFile)
-        self.researchScheduler = self.init_research_scheduler(configFile)
-        self.fleetScheduler = self.init_fleet_scheduler(configFile)
-        self.events = []
+        self.researchPlanet = configs[research.RESEARCH_PLANET]
+        self.tasks = self.getTasks(configs)
+        self.events = self.seedEvents()
+        log.debug(self.events)
 
-    def init_building_schedulers(self, configFile):
-        #TODO: read goals from config
-        schedulers = [buildings.BuildingScheduler(planet, []) for planet in self.empire.planets.values()]
-        return schedulers
+    def seedEvents(self):
+        seeds = []
+        #Buildings
+        for p in self.empire.planets:
+            seeds.append(Event(Event.BUILDING_IN_PROGRESS, self.empire.planets[p].buildingScheduler.nextTimeAvailable - time.time(), p))
+        #Research
+        # seeds.append(Event(Event.RESEARCH_IN_PROGRESS,
+        #                    self.empire.planets[self.researchPlanet].researchScheduler.nextTimeAvailable - time.time(),
+        #                    self.researchPlanet))
+        #TODO: fleet movement
+        #TODO: shipyard construction
+        #TODO: periodic check
 
-    def init_research_scheduler(self, configFile):
-        #TODO: read goals from config
-        researchPlanet = self.empire.planets['HomeWorld']
-        return research.ResearchScheduler(researchPlanet, [])
+        return seeds
 
-    def init_fleet_scheduler(self, configFile):
-        #TODO: read goals from config
-        return fleet.FleetScheduler([])
+
+    def getTasks(self, configs):
+        goals = []
+        for g in configs['goals']:
+            count = 1
+            if 'count' in g:
+                count = g['count']
+            goals.append(Goal(g['what'], g['level'], self.empire.planets[g['planet']], g['priority'], count))
+
+        tasks = []
+        for goal in goals:
+            tasks.extend(goal.generateTasks())
+        return tasks
+
+
+    def getNextEvent(self):
+        self.events.sort(key= lambda x : x.getComplitionTime())
+        log.debug('Current events in the queue : ' + '; '.join(map(str, self.events)))
+        #Get next finishing event
+        eventToLookAt = self.events.pop(0)
+        log.info(eventToLookAt)
+        if eventToLookAt.getComplitionTime() < time.time():
+            #The event has finished, treat the consequences
+            self.treatEvent(eventToLookAt)
+        else:
+            #sleep until time to react to it
+            log.info('sleeping for {} until next event {}'
+                     .format(seconds_to_formatted_time(eventToLookAt.getComplitionTime()), str(eventToLookAt)))
+            time.sleep(eventToLookAt.getComplitionTime())
+
+    def treatEvent(self, event):
+        log.info('Treating event : {}'.format(str(event)))
+        if event.type == Event.BUILDING_IN_PROGRESS:
+            #Building just finished, build next one
+            relevantTasks = self.filterTasks(event.planetName, buildings.BUILDINGS)
+            taskToExecute = relevantTasks.pop(0)
+            taskToExecute.price()
+            if taskToExecute.isAffordable():
+                self.newEvent(taskToExecute.execute())
+                self.removeAchievedTask(taskToExecute.id)
+            else:
+                #TODO: pick duration
+                self.newEvent(Event(Event.NO_MONEY, random.gauss(5400, 600), event.planetName))
+        elif event.type == Event.NO_MONEY:
+            relevantTasks = self.filterTasks(event.planetName, buildings.BUILDINGS)
+            #                + self.filterTasks(event.planetName, research.RESEARCH)
+            # relevantTasks.sort(key=lambda x : x.priority)
+            # i = 0
+            taskToExecute = relevantTasks.pop(0)
+            taskToExecute.price()
+            if taskToExecute.isAffordable():
+                self.newEvent(taskToExecute.execute())
+            else:
+                log.debug('Still cannot afford')
+                # TODO: pick duration
+                self.newEvent(Event(Event.NO_MONEY, random.gauss(500, 20), event.planetName))
+            self.removeAchievedTask(taskToExecute.id)
+
+    #TODO
+    def getRelevantTask(self):
+        pass
+
+    def newEvent(self, event):
+        log.info('New event added : {}'.format(event))
+        self.events.append(event)
+
+    def removeAchievedTask(self, taskId):
+        index = None
+        for i in range(len(self.tasks)):
+            if self.tasks[i].id == taskId:
+                index = i
+        if index == None:
+            log.error('Impossible to removing task {}'.format(taskId))
+        else:
+            self.tasks.pop(index)
+
+    def filterTasks(self, planetName, type):
+        return sorted(
+            [t for t in self.tasks if t.planet.name == planetName and Goal.getType(t.object) == type],
+            key=lambda x : x.priority)
+
+    def run(self):
+
+        while(True):
+            self.getNextEvent()

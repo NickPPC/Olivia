@@ -1,8 +1,15 @@
+import logging
 import menu
 import time
 import planet
+from utils import *
+from scheduler import Event
+
+log = get_module_logger(__name__)
+
 
 driver = None
+BUILDINGS = 'buildings'
 RESOURCES = 'resources'
 FACILITIES = 'station'
 
@@ -68,16 +75,7 @@ def extract_level_building(buildingName):
         .find_element_by_class_name(buildingTranslation[buildingName][2]) \
         .find_element_by_class_name('level').get_attribute('innerHTML').strip()
 
-    while '<' in text:
-        i = text.find('<')
-        j = text.find('>')
-        if i == 0:
-            text = text[j + 1:]
-            text = text[text.find('>') + 1:]
-        else:
-            text = text[:i - 1]
-        text.strip()
-    return int(text)
+    return level_extraction(text)
 
 def extract_resources_buildings_level(planet):
     go_to_resources()
@@ -106,69 +104,31 @@ def extract_facilities_buildings_level(planet):
 
 
 
-class BuildingGoal():
-
-    metalCost = 0
-    cristalCost = 0
-    deuteriumCost = 0
-
-    def __init__(self, planet, buildingName, level, priority=1):
-        self.planet = planet
-        self.buildingName = buildingName
-        self.level = level
-        self.priority = priority
-
-#TODO: cascade requirement as new goal
-#TODO : take into account priority
 class BuildingScheduler():
 
     nextTimeAvailable = 0
 
-    def __init__(self, planet, goals):
-        self.planet = planet
-        self.goals = goals
+    def __init__(self, planetName):
+        self.planetName = planetName
         self.updateTimeAvailability()
 
     def updateTimeAvailability(self):
         menu.navigate_to_overview()
         try:
             timeLeft = driver.find_element_by_id('Countdown').get_attribute('innerHTML')
-            #Parsing
-            days = 0
-            hours =0
-            minutes = 0
-            seconds = 0
-            if 'd' in timeLeft:
-                days = int(timeLeft.split('d')[0])
-                timeLeft = timeLeft.split('d')[1]
-            if 'h' in timeLeft:
-                hours = int(timeLeft.split('h')[0])
-                timeLeft = timeLeft.split('h')[1]
-            if 'm' in timeLeft:
-                minutes = int(timeLeft.split('m')[0])
-                timeLeft = timeLeft.split('m')[1]
-            if 's' in timeLeft:
-                seconds = int(timeLeft.split('s')[0])
-            self.nextTimeAvailable = time.time() + ((days * 24 + hours)*60 + minutes)*60 + seconds
+            self.nextTimeAvailable = time.time() + formatted_time_to_seconds(timeLeft)
         except Exception as e:
             print(str(e))
 
     def waitUntilConstructionSlotAvailable(self):
         if not self.isConstructionSlotAvailable():
             waitTime = int(self.nextTimeAvailable - time.time() + 3)
-            print('Waiting {} s before next construction'.format(waitTime))
+            log.info('Waiting {} before next construction'.format(seconds_to_formatted_time(waitTime)))
             time.sleep(waitTime)
 
     def isConstructionSlotAvailable(self):
         return time.time() > self.nextTimeAvailable
 
-    #TODO
-    def isConstructionAffordable(self):
-        self.planet.update_planet_resources()
-        return True
-
-    def isConstructionPossible(self):
-        return self.isConstructionSlotAvailable() and self.isConstructionAffordable()
 
     def clickBuildingElement(self, buildingName):
 
@@ -183,38 +143,24 @@ class BuildingScheduler():
 
     def getBuildingCost(self, buildingName=None):
 
+        #If buildingName is None it means the proper building was already clicked
         if buildingName is not None:
             self.clickBuildingElement(buildingName)
             time.sleep(2)
-        cost = {planet.METAL : 0, planet.CRISTAL : 0, planet.DEUTERIUM : 0}
         costList = driver.find_element_by_id('costs')
-        try:
-            cost[planet.METAL] = costList.find_element_by_class_name('metal').find_element_by_class_name('cost').get_attribute('innerHTML')
-        except:
-            pass
-        try:
-            cost[planet.CRISTAL] = costList.find_element_by_class_name('crystal').find_element_by_class_name('cost').get_attribute('innerHTML')
-        except:
-            pass
-        try:
-            cost[planet.DEUTERIUM] = costList.find_element_by_class_name('deuterium').find_element_by_class_name('cost').get_attribute('innerHTML')
-        except:
-            pass
-
-        return cost
+        return cost_extraction(costList)
 
 
 
     def upgrade_building(self, buildingName):
 
         if buildingName not in buildingTranslation:
-            print('Error, building is not valid')
-            return
+            return Event(Event.ERROR, 0, self.planetName, 'Building is not valid')
 
-        self.waitUntilConstructionSlotAvailable()
+        if not self.isConstructionSlotAvailable():
+            return Event(Event.ERROR, 0, self.planetName, 'No construction slot')
 
-        #TODO: in scheduler deal with no money case
-        if self.isConstructionPossible():
+        try:
 
             self.clickBuildingElement(buildingName)
             time.sleep(3)
@@ -224,9 +170,14 @@ class BuildingScheduler():
             #TODO: improve by using construction time extracted when building
             self.updateTimeAvailability()
 
-            print('{} construction started for {}'.format(buildingName, cost))
-        else:
-            print('Impossible to upgrade this building')
+            log.info('{} construction started for {} metal, {} cristal and {} deuterium'.format(buildingName,
+                                                                         cost[METAL], cost[CRISTAL], cost[DEUTERIUM]))
+            return Event(Event.BUILDING_IN_PROGRESS, self.nextTimeAvailable - time.time(), self.planetName, buildingName)
+        except Exception as e:
+            print('ERROR : Impossible to upgrade this building, {}'.format(str(e)))
+            return Event(Event.ERROR, 0, self.planetName, 'Impossible to upgrade this building, {}'.format(str(e)))
+
 
     def __str__(self):
-        return ', '.join(map(str, self.goals))
+        return '{} : Next building slot available in {}'.\
+            format(self.planetName, seconds_to_formatted_time(self.nextTimeAvailable - time.time()))
