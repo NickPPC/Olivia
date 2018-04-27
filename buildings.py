@@ -26,7 +26,7 @@ CRISTAL_SILO = 'cristalSilo'
 DEUTERIUM_SILO = 'deuteriumSilo'
 #Facilities
 STATION_BUILDING = 'stationbuilding'
-ROBOTICS_FACTORY = 'reoboticsFactory'
+ROBOTICS_FACTORY = 'roboticsFactory'
 SHIPYARD = 'shipyard'
 RESEARCH_LAB = 'researchLab'
 ALLIANCE_DEPOT = 'allianceDepot'
@@ -118,7 +118,7 @@ class BuildingScheduler():
             timeLeft = driver.find_element_by_id('Countdown').get_attribute('innerHTML')
             self.nextTimeAvailable = time.time() + formatted_time_to_seconds(timeLeft)
         except Exception as e:
-            print(str(e))
+            log.warn('Exception {} : {}'.format(type(e).__name__, str(e)))
 
     def waitUntilConstructionSlotAvailable(self):
         if not self.isConstructionSlotAvailable():

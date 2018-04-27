@@ -23,13 +23,13 @@ log = get_module_logger(__name__)
 
 def seconds_to_formatted_time(seconds):
     # log.debug('seconds = {}'.format(seconds))
-    timeLeft = math.ceil(seconds)
+    timeLeft = int(math.ceil(seconds))
     s = timeLeft % 60
-    timeLeft = (timeLeft - s)/60
+    timeLeft = int((timeLeft - s)/60)
     m = timeLeft % 60
-    timeLeft = (timeLeft - m)/60
+    timeLeft = int((timeLeft - m)/60)
     h = timeLeft % 24
-    timeLeft = (timeLeft - h) /24
+    timeLeft = int((timeLeft - h) /24)
     d = timeLeft
 
     formattedTime = ''
