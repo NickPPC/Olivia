@@ -3,7 +3,7 @@ import menu
 import time
 import planet
 from utils import *
-from scheduler import Event
+import scheduler
 
 log = get_module_logger(__name__)
 
@@ -155,10 +155,10 @@ class BuildingScheduler():
     def upgrade_building(self, buildingName):
 
         if buildingName not in buildingTranslation:
-            return Event(Event.ERROR, 0, self.planetName, 'Building is not valid')
+            return scheduler.Event(scheduler.Event.ERROR, 0, self.planetName, 'Building is not valid')
 
         if not self.isConstructionSlotAvailable():
-            return Event(Event.ERROR, 0, self.planetName, 'No construction slot')
+            return scheduler.Event(scheduler.Event.ERROR, 0, self.planetName, 'No construction slot')
 
         try:
 
@@ -172,10 +172,10 @@ class BuildingScheduler():
 
             log.info('{} construction started for {} metal, {} cristal and {} deuterium'.format(buildingName,
                                                                          cost[METAL], cost[CRISTAL], cost[DEUTERIUM]))
-            return Event(Event.BUILDING_IN_PROGRESS, self.nextTimeAvailable - time.time(), self.planetName, buildingName)
+            return scheduler.Event(scheduler.Event.BUILDING_IN_PROGRESS, self.nextTimeAvailable - time.time(), self.planetName, buildingName)
         except Exception as e:
-            print('ERROR : Impossible to upgrade this building, {}'.format(str(e)))
-            return Event(Event.ERROR, 0, self.planetName, 'Impossible to upgrade this building, {}'.format(str(e)))
+            log.error('Impossible to upgrade this building {} on {}\n {} : {}'.format(buildingName, self.planetName, type(e).__name__, str(e)))
+            return scheduler.Event(scheduler.Event.ERROR, 0, self.planetName, 'Impossible to upgrade this building, {}'.format(str(e)))
 
 
     def __str__(self):

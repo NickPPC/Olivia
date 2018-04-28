@@ -40,11 +40,12 @@ class Planet():
     terraformer = 0
     spaceDock = 0
 
-    def __init__(self, name):
+    def __init__(self, name, isResearchPlanet):
         self.name = name
         self.full_update()
         self.buildingScheduler = BuildingScheduler(name)
-        self.researchScheduler = ResearchScheduler(self, [])
+        if isResearchPlanet:
+            self.researchScheduler = ResearchScheduler(name)
 
     def update_buildings_level(self):
         extract_resources_buildings_level(self)
@@ -52,6 +53,7 @@ class Planet():
 
 
     def update_planet_resources(self):
+        menu.navigate_to_planet(self.name)
         self.metal = int(driver.find_element_by_id('resources_metal').get_attribute('innerHTML').replace('.', ''))
         self.cristal = int(driver.find_element_by_id('resources_crystal').get_attribute('innerHTML').replace('.', ''))
         self.deuterium = int(driver.find_element_by_id('resources_deuterium').get_attribute('innerHTML').replace('.', ''))
@@ -88,19 +90,21 @@ class Empire():
     armorTech = 0
 
     
-    def __init__(self):
+    def __init__(self, researchPlanet=None):
         self.planets = {}
-        self.generate_planets()
+        self.generate_planets(researchPlanet)
         self.update_research_level()
-        #TODO: initialize with all planets
 
     def add_planet(self, planet):
         self.planets[planet.name] = planet
 
-    def generate_planets(self):
+    def generate_planets(self, researchPlanet):
         planetNames = menu.list_planets()
         for planetName in planetNames:
-            planet = Planet(planetName)
+            doesResearch = False
+            if researchPlanet is not None and planetName == researchPlanet:
+                doesResearch = True
+            planet = Planet(planetName, doesResearch)
             self.add_planet(planet)
 
     def update_research_level(self):

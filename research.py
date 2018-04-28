@@ -1,9 +1,15 @@
 import time
 import menu
 import planet
+from utils import *
+import scheduler
+
+log = get_module_logger(__name__)
+
 
 driver = None
 
+RESEARCH_PLANET = 'researchPlanet'
 
 RESEARCH = 'research'
 #Technolgies
@@ -87,40 +93,23 @@ class ResearchScheduler():
 
     nextTimeAvailable = 0
 
-    def __init__(self, planet, goals):
-        self.planet = planet
-        self.goals = goals
+    def __init__(self, planetName):
+        self.planetName = planetName
         self.updateTimeAvailability()
 
     def updateTimeAvailability(self):
         menu.navigate_to_overview()
         try:
             timeLeft = driver.find_element_by_id('researchCountdown').get_attribute('innerHTML')
-            # Parsing
-            days = 0
-            hours = 0
-            minutes = 0
-            seconds = 0
-            if 'd' in timeLeft:
-                days = int(timeLeft.split('d')[0])
-                timeLeft = timeLeft.split('d')[1]
-            if 'h' in timeLeft:
-                hours = int(timeLeft.split('h')[0])
-                timeLeft = timeLeft.split('h')[1]
-            if 'm' in timeLeft:
-                minutes = int(timeLeft.split('m')[0])
-                timeLeft = timeLeft.split('m')[1]
-            if 's' in timeLeft:
-                seconds = int(timeLeft.split('s')[0])
-            self.nextTimeAvailable = time.time() + ((days * 24 + hours) * 60 + minutes) * 60 + seconds
+            self.nextTimeAvailable = time.time() + formatted_time_to_seconds(timeLeft)
         except Exception as e:
-            print(str(e))
+            log.warn('Exception {} : {}'.format(type(e).__name__, str(e)))
 
-    def waitUntilResearchSlotAvailable(self):
-        if not self.isResearchSlotAvailable():
-            waitTime = self.nextTimeAvailable - time.time() + 3
-            print('Waiting {} s before next construction'.format(waitTime))
-            time.sleep(waitTime)
+    # def waitUntilResearchSlotAvailable(self):
+    #     if not self.isResearchSlotAvailable():
+    #         waitTime = self.nextTimeAvailable - time.time() + 3
+    #         print('Waiting {} s before next construction'.format(waitTime))
+    #         time.sleep(waitTime)
 
     def isResearchSlotAvailable(self):
         return time.time() > self.nextTimeAvailable
@@ -134,32 +123,14 @@ class ResearchScheduler():
             self.clickTechElement(techName)
             time.sleep(3)
 
-        cost = {planet.METAL: 0, planet.CRISTAL: 0, planet.DEUTERIUM: 0}
-        costList = driver.find_element_by_id('costs')
-        try:
-            cost[planet.METAL] = costList.find_element_by_class_name('metal').find_element_by_class_name('cost').get_attribute(
-                'innerHTML')
-        except:
-            pass
-        try:
-            cost[planet.CRISTAL] = costList.find_element_by_class_name('crystal').find_element_by_class_name(
-                'cost').get_attribute('innerHTML')
-        except:
-            pass
-        try:
-            cost[planet.DEUTERIUM] = costList.find_element_by_class_name('deuterium').find_element_by_class_name(
-                'cost').get_attribute('innerHTML')
-        except:
-            pass
-
-        return cost
+        return cost_extraction(driver.find_element_by_id('costs'))
 
     def researchTech(self, techName):
         if techName not in researchTranslation:
-            print('Error, building is not valid')
-            return
+            return scheduler.Event(scheduler.Event.ERROR, 0, self.planetName, 'Technology is not valid')
 
-        self.waitUntilResearchSlotAvailable()
+        if not self.isResearchSlotAvailable():
+            return scheduler.Event(scheduler.Event.ERROR, 0, self.planetName, 'No construction slot')
 
         try:
 
@@ -170,6 +141,13 @@ class ResearchScheduler():
             driver.find_element_by_class_name('build-it').click()
             # TODO: improve by using construction time extracted when building
             self.updateTimeAvailability()
-            print('{} research started for {}'.format(techName, cost))
+            log.info('{} research started for {} metal, {} cristal and {} deuterium'.format(techName,
+                                                                                                cost[METAL],
+                                                                                                cost[CRISTAL],
+                                                                                                cost[DEUTERIUM]))
+            return scheduler.Event(scheduler.Event.RESEARCH_IN_PROGRESS, self.nextTimeAvailable - time.time(), self.planetName,
+                         techName)
+
         except Exception as e:
-            print('Impossible to do this research {} : {}'.format(techName, str(e)))
+            log.error('Impossible to do this research {} on {}\n {} : {}'.format(techName, self.planetName, type(e).__name__, str(e)))
+            return scheduler.Event(scheduler.Event.ERROR, 0, self.planetName, 'Impossible to research this technology, {}'.format(str(e)))

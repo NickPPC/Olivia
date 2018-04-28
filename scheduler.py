@@ -32,6 +32,7 @@ class Event():
         log.debug('Event creation : {} , {}, {}, {}'.format(type, duration, planetName, description))
         self.type = type
         self.creationTime = time.time()
+        # + 3 to make sure the pages have time to open and auto refresh
         self.duration = duration + 3
         self.description = description
         self.planetName = planetName
@@ -101,11 +102,15 @@ class Task():
         menu.navigate_to_planet(self.planet.name)
         if Goal.getType(self.object) == buildings.BUILDINGS:
             self.cost = self.planet.buildingScheduler.getBuildingCost(self.object)
+        elif Goal.getType(self.object) == research.RESEARCH:
+            self.cost = self.planet.researchScheduler.getTechCost(self.object)
         else:
-            log.warn('This type of task privcing ({}) is not yet implemented'.format(Goal.getType(self.object)))
+            log.warn('This type of task pricing ({}) is not yet implemented'.format(Goal.getType(self.object)))
         #TODO:other cases (research, fleet ...)
     def isAffordable(self):
         self.planet.update_planet_resources()
+        if self.cost is None:
+            self.price()
         if METAL in self.cost and self.cost[METAL] > self.planet.metal:
             return False
         if CRISTAL in self.cost and self.cost[CRISTAL] > self.planet.cristal:
@@ -125,8 +130,13 @@ class MasterScheduler():
 
 
     def __init__(self, configs):
-        self.empire = planet.Empire()
-        self.researchPlanet = configs[research.RESEARCH_PLANET]
+        if research.RESEARCH_PLANET in configs:
+            log.debug('Research planet is specified in configs : {}'.format(research.RESEARCH_PLANET))
+            self.researchPlanet = configs[research.RESEARCH_PLANET]
+        else:
+            log.warn('Research planet is NOT specified in configs : {}'.format(research.RESEARCH_PLANET))
+            self.researchPlanet = None
+        self.empire = planet.Empire(self.researchPlanet)
         self.tasks = self.getTasks(configs)
         self.events = self.seedEvents()
         log.debug(self.events)
@@ -137,9 +147,9 @@ class MasterScheduler():
         for p in self.empire.planets:
             seeds.append(Event(Event.BUILDING_IN_PROGRESS, self.empire.planets[p].buildingScheduler.nextTimeAvailable - time.time(), p))
         #Research
-        # seeds.append(Event(Event.RESEARCH_IN_PROGRESS,
-        #                    self.empire.planets[self.researchPlanet].researchScheduler.nextTimeAvailable - time.time(),
-        #                    self.researchPlanet))
+        seeds.append(Event(Event.RESEARCH_IN_PROGRESS,
+                            self.empire.planets[self.researchPlanet].researchScheduler.nextTimeAvailable - time.time(),
+                            self.researchPlanet))
         #TODO: fleet movement
         #TODO: shipyard construction
         #TODO: periodic check
@@ -163,7 +173,7 @@ class MasterScheduler():
 
     def getNextEvent(self):
         self.events.sort(key= lambda x : x.getComplitionTime())
-        log.debug('Current events in the queue : ' + '; '.join(map(str, self.events)))
+        log.debug('Current events in the queue :\n' + '\n'.join(map(str, self.events)))
         #Get next finishing event
         eventToLookAt = self.events.pop(0)
         log.info(eventToLookAt)
@@ -181,37 +191,53 @@ class MasterScheduler():
         log.info('Treating event : {}'.format(str(event)))
         if event.type == Event.BUILDING_IN_PROGRESS:
             #Building just finished, build next one
-            taskToExecute = self.pickTask(event.planetName)
+            taskToExecute = self.pickTask(event.planetName, buildings.BUILDINGS)
             if taskToExecute is not None:
-                taskToExecute.price()
-                if taskToExecute.isAffordable():
-                    if (self.newEvent(taskToExecute.execute())):
-                        self.removeAchievedTask(taskToExecute.id)
-                else:
-                    #TODO: pick duration
-                    self.newEvent(Event(Event.NO_MONEY, random.gauss(5400, 600), event.planetName))
+                self.processTask(taskToExecute)
             else:
                 #We do not build anything
                 # to save money for some other task
                 # or because we ran out of building task for this planet
                 log.info('Not building anything this time on {}'.format(event.planetName))
-                # TODO: add a check status event ?
+        elif event.type == Event.RESEARCH_IN_PROGRESS:
+            #Research is done, go to next one
+            taskToExecute = self.pickTask(event.planetName, research.RESEARCH)
+            if taskToExecute is not None:
+                self.processTask(taskToExecute)
+            else:
+                # We do not research anything
+                # to save money for some other task
+                # or because we ran out of research task in the config file
+                log.info('Not researching anything this time on {}'.format(event.planetName))
         elif event.type == Event.NO_MONEY:
             taskToExecute = self.pickTask(event.planetName)
-            taskToExecute.price()
-            if taskToExecute.isAffordable():
-                self.newEvent(taskToExecute.execute())
+            if taskToExecute is not None:
+                self.processTask(taskToExecute)
             else:
-                log.debug('Still cannot afford')
-                # TODO: pick duration
-                self.newEvent(Event(Event.NO_MONEY, random.gauss(5400, 600), event.planetName))
-            self.removeAchievedTask(taskToExecute.id)
+                # We do not do anything
+                log.info('Not doing anything this time on {}'.format(event.planetName))
+        else:
+            log.warn('Not yet implemented for {} event :\n'.format(event.type, event))
 
-    #TODO
-    def pickTask(self, planetName):
-        relevantTasks = self.filterTasksByPlanet(planetName)
-        log.debug('Tasks considered for planet {} : {}'.format(planetName, '; '.join(map(str, relevantTasks))))
-        # TODO: arbitration algorithm based on priority
+    def processTask(self, task):
+        if task.isAffordable():
+            resultingEvent = task.execute()
+            self.newEvent(resultingEvent)
+            if resultingEvent.type != Event.ERROR:
+                self.removeAchievedTask(task.id)
+        else:
+            # TODO: pick duration
+            self.newEvent(Event(Event.NO_MONEY, random.gauss(5400, 600), task.planet.name))
+
+
+
+    def pickTask(self, planetName, type=None):
+        if type is None:
+            relevantTasks = self.filterTasksByPlanet(planetName)
+        else:
+            relevantTasks = self.filterTasks(planetName, type)
+        log.debug('Tasks considered for planet {} :\n{}'.format(planetName, '\n'.join(map(str, relevantTasks))))
+        # TODO: arbitration algorithm based on priority, cost and slotAvailability
         if len(relevantTasks) > 0:
             taskToExecute = relevantTasks.pop(0)
             log.info('Task chosen for {} : {}'.format(planetName, str(taskToExecute)))
@@ -224,10 +250,7 @@ class MasterScheduler():
     def newEvent(self, event):
         log.info('New event added : {}'.format(event))
         self.events.append(event)
-        if event.type == Event.ERROR:
-            return False
-        else:
-            return True
+
 
     def removeAchievedTask(self, taskId):
         index = None
