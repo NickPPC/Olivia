@@ -2,6 +2,7 @@ import argparse
 import logging
 import time
 from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
 from pyvirtualdisplay import Display
 import json
 import connection
@@ -53,18 +54,28 @@ if __name__ == '__main__':
 
     driver = init_driver(config)
     time.sleep(5)
-    driver.get('https://s146-us.ogame.gameforge.com/game/index.php?page=overview')
+    # Closing first tab
+    del driver.window_handles[0]
+    driver.switch_to.window(driver.window_handles[0])
+    time.sleep(1)
+    driver.close()
+    time.sleep(2)
+    # Focusing on open tab
+    driver.switch_to.window(driver.window_handles[0])
 
 
-    if not args.manual:
-        masterScheduler = scheduler.MasterScheduler(config)
-        # State when connecting
-        log.info(masterScheduler.empire)
-        masterScheduler.run()
+    try:
+        if not args.manual:
+            masterScheduler = scheduler.MasterScheduler(config)
+            # State when connecting
+            log.info(masterScheduler.empire)
+            masterScheduler.run()
 
 
-    if not args.display and not args.manual:
+        if not args.display and not args.manual:
+            driver.quit()
+            display.stop()
+
+    except Exception as e:
+        log.error('Something went very wrong', str(e))
         driver.quit()
-        display.stop()
-
-
