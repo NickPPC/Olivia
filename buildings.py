@@ -120,11 +120,11 @@ class BuildingScheduler():
         except Exception as e:
             log.warn('Exception {} : {}'.format(type(e).__name__, str(e)))
 
-    def waitUntilConstructionSlotAvailable(self):
-        if not self.isConstructionSlotAvailable():
-            waitTime = int(self.nextTimeAvailable - time.time() + 3)
-            log.info('Waiting {} before next construction'.format(seconds_to_formatted_time(waitTime)))
-            time.sleep(waitTime)
+    # def waitUntilConstructionSlotAvailable(self):
+    #     if not self.isConstructionSlotAvailable():
+    #         waitTime = int(self.nextTimeAvailable - time.time() + 3)
+    #         log.info('Waiting {} before next construction'.format(seconds_to_formatted_time(waitTime)))
+    #         time.sleep(waitTime)
 
     def isConstructionSlotAvailable(self):
         return time.time() > self.nextTimeAvailable

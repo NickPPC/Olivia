@@ -52,6 +52,8 @@ if __name__ == '__main__':
         config = json.load(file)
 
     driver = init_driver(config)
+    time.sleep(5)
+    driver.get('https://s146-us.ogame.gameforge.com/game/index.php?page=overview')
 
 
     if not args.manual:
