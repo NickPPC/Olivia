@@ -2,7 +2,7 @@ import time
 
 driver = None
 
-
+#TODO: deal with loading problem and reload
 def connect(config):
     #homepage
     driver.get(config['homeUrl'])

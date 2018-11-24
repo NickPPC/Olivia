@@ -1,4 +1,3 @@
-import logging
 import random
 import planet
 import research
@@ -23,10 +22,15 @@ class Event():
 
     BUILDING_IN_PROGRESS = 'Building in progress'
     RESEARCH_IN_PROGRESS = 'Research in progress'
+    SHIPYARD_LOCKED = 'Shipyard is reserved for upgrade'
+    RESEARCH_LAB_LOCKED = 'Research lab is reserved for upgrade'
     FLEET_ARRIVING = 'Fleet arriving'
+    SPYING_IN_PROGRESS = 'Espionage probe(s) in flight'
     NO_MONEY = 'Not enough resources'
+    NEED_ENERGY = 'Requires more energy'
     ERROR = 'Error !!'
     #TODO: create more event type (attacks, ...)
+
 
     def __init__(self, type, duration, planetName, description=''):
         log.debug('Event creation : {} , {}, {}, {}'.format(type, duration, planetName, description))
@@ -36,6 +40,7 @@ class Event():
         self.duration = duration + 3
         self.description = description
         self.planetName = planetName
+        self.callback = None
 
     def getComplitionTime(self):
         return self.creationTime + self.duration
@@ -45,9 +50,14 @@ class Event():
 
 
     def __str__(self):
-        result = '{} started {} ago, finishing in {} on planet {}'\
+
+        if self.getRemainingTime() > 0:
+            finishTime = 'finishing in {}'.format(seconds_to_formatted_time(self.getRemainingTime()))
+        else :
+            finishTime = 'has ended'
+        result = '{} started {} ago, {} on planet {}'\
             .format(self.type, seconds_to_formatted_time(time.time()- self.creationTime ),
-                                                seconds_to_formatted_time(self.getRemainingTime()), self.planetName)
+                                finishTime, self.planetName)
 
         if self.description != '':
             result = '{} : {}'.format(result, self.description)
@@ -70,6 +80,8 @@ class Goal():
         elif object in research.researchTranslation:
             return research.RESEARCH
         #TODO: fleet/defense
+        else:
+            return None
 
     def generateTasks(self):
 
@@ -80,23 +92,38 @@ class Goal():
 
 class Task():
 
-    def __init__(self, object, planet, priority, count):
+    def __init__(self, object, planet, priority, count, dependencies=None, preexecuteCall = None, postexecuteCall = None):
         self.object = object
         self.planet = planet
         self.priority = priority
         self.count = count
         self.cost = None
         self.id = generateTaskId()
+        if dependencies is not None:
+            self.dependencies = dependencies
+        self.preexecuteCall = preexecuteCall
+        self.postexecuteCall = postexecuteCall
     # TODO: add dependencies
 
     def execute(self):
+        if self.preexecuteCall is not None:
+            self.preexecuteCall()
+
+        resultingEvent = None
+
         menu.navigate_to_planet(self.planet.name)
         if Goal.getType(self.object) == buildings.BUILDINGS:
-            log.debug('Bulding task : {}'.format(str(self)))
-            return self.planet.buildingScheduler.upgrade_building(self.object)
+            log.debug('Bulding task : {}'.format(self.__str__()))
+            resultingEvent = self.planet.buildingScheduler.upgrade_building(self.object)
+        elif Goal.getType(self.object) == research.RESEARCH:
+            log.debug('Researching task : {}'.format(self.__str__()))
+            resultingEvent = self.planet.researchScheduler.researchTech(self.object)
         else:
             log.warn('This type of task ({}) is not yet implemented'.format(Goal.getType(self.object)))
-        #TODO:other cases (research, fleet ...)
+        #TODO:other cases (shipyard, fleet ...)
+
+        resultingEvent.callback = self.postexecuteCall
+        return resultingEvent
 
     def price(self):
         menu.navigate_to_planet(self.planet.name)
@@ -141,6 +168,14 @@ class MasterScheduler():
         self.events = self.seedEvents()
         log.debug(self.events)
 
+    def lockResearchLab(self):
+        self.empire.planets[self.researchPlanet].researchScheduler.lockedForUpgrade = True
+
+    def unlockResearchLab(self):
+        self.empire.planets[self.researchPlanet].researchScheduler.lockedForUpgrade = False
+
+    #TODO lock/unlock shipyard
+
     def seedEvents(self):
         seeds = []
         #Buildings
@@ -179,8 +214,9 @@ class MasterScheduler():
         log.info(eventToLookAt)
         if eventToLookAt.getComplitionTime() > time.time():
             # sleep until time to react to it
-            log.info('sleeping for {} until next event {}'
-                     .format(seconds_to_formatted_time(eventToLookAt.getRemainingTime()), str(eventToLookAt)))
+            log.info('sleeping for {} until event {} on {} finishes'
+                     .format(seconds_to_formatted_time(eventToLookAt.getRemainingTime()),
+                             eventToLookAt.type, eventToLookAt.planetName))
             time.sleep(eventToLookAt.getRemainingTime())
         #The event has finished, treat the consequences
         self.treatEvent(eventToLookAt)
@@ -189,6 +225,9 @@ class MasterScheduler():
 
     def treatEvent(self, event):
         log.info('Treating event : {}'.format(str(event)))
+        if event.callback is not None:
+            log.info('Event callback')
+            event.callback()
         if event.type == Event.BUILDING_IN_PROGRESS:
             #Building just finished, build next one
             taskToExecute = self.pickTask(event.planetName, buildings.BUILDINGS)

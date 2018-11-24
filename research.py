@@ -92,6 +92,7 @@ def extract_research_level(empire):
 class ResearchScheduler():
 
     nextTimeAvailable = 0
+    lockedForUpgrade = False
 
     def __init__(self, planetName):
         self.planetName = planetName
@@ -128,6 +129,10 @@ class ResearchScheduler():
     def researchTech(self, techName):
         if techName not in researchTranslation:
             return scheduler.Event(scheduler.Event.ERROR, 0, self.planetName, 'Technology is not valid')
+
+        if self.lockedForUpgrade:
+            return scheduler.Event(scheduler.Event.RESEARCH_LAB_LOCKED, 24 * 60, self.planetName)
+
 
         if not self.isResearchSlotAvailable():
             return scheduler.Event(scheduler.Event.ERROR, 0, self.planetName, 'No construction slot')

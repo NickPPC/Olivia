@@ -17,25 +17,8 @@ import utils
 log = utils.get_module_logger(__name__)
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-d", "--display", action="store_true", help="set display of what is happening")
-parser.add_argument("-m", "--manual", action="store_true", help="Manual mode, does not start scheduler")
-parser.add_argument("-f", "--configFile", help="path to the JSON config file", default='config.json')
-
-
-
-if __name__ == '__main__':
-
-    args = parser.parse_args()
-
-    if not args.display:
-        display = Display(visible=0, size=(1280, 1024))
-        display.start()
-
-    with open(args.configFile) as file:
-        config = json.load(file)
+def init_driver(config):
     driver = webdriver.Firefox()
-
 
     connection.driver = driver
     buildings.driver = driver
@@ -47,17 +30,38 @@ if __name__ == '__main__':
 
     connection.connect(config)
 
-    #State when connecting
-    masterScheduler = scheduler.MasterScheduler(config)
-    log.info(masterScheduler.empire)
+
+    return driver
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-d", "--display", action="store_true", help="set display of what is happening")
+parser.add_argument("-m", "--manual", action="store_true", help="Manual mode, does not start scheduler")
+parser.add_argument("-f", "--configFile", help="path to the JSON config file", default='config.json')
+
+
+
+if __name__ == '__main__':
+
+    args = parser.parse_args()
+
+    if not args.display and not args.manual:
+        display = Display(visible=0, size=(1280, 1024))
+        display.start()
+
+    with open(args.configFile) as file:
+        config = json.load(file)
+
+    driver = init_driver(config)
+
+
     if not args.manual:
+        masterScheduler = scheduler.MasterScheduler(config)
+        # State when connecting
+        log.info(masterScheduler.empire)
         masterScheduler.run()
 
 
-
-
-
-    if not args.display:
+    if not args.display and not args.manual:
         driver.quit()
         display.stop()
 
