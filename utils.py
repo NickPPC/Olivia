@@ -10,11 +10,24 @@ DEUTERIUM = 'deuterium'
 
 def get_module_logger(mod_name):
   logger = logging.getLogger(mod_name)
-  handler = logging.StreamHandler()
   formatter = logging.Formatter(
-        '%(asctime)s %(name)-12s %(levelname)-8s - %(funcName)20s %(message)s')
-  handler.setFormatter(formatter)
-  logger.addHandler(handler)
+      '%(asctime)s %(name)-12s %(levelname)-8s - %(funcName)20s %(message)s')
+
+  consoleHandler = logging.StreamHandler()
+  consoleHandler.setFormatter(formatter)
+  consoleHandler.setLevel(logging.INFO)
+  logger.addHandler(consoleHandler)
+
+  debugFileHandler = logging.FileHandler('logs/olivia_debug.log')
+  debugFileHandler.setFormatter(formatter)
+  debugFileHandler.setLevel(logging.DEBUG)
+  logger.addHandler(debugFileHandler)
+
+  fileHandler = logging.FileHandler('logs/olivia.log')
+  fileHandler.setFormatter(formatter)
+  fileHandler.setLevel(logging.INFO)
+  logger.addHandler(fileHandler)
+
   logger.setLevel(logging.DEBUG)
   return logger
 
