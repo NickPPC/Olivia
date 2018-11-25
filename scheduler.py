@@ -209,6 +209,9 @@ class MasterScheduler():
     def getNextEvent(self):
         self.events.sort(key= lambda x : x.getComplitionTime())
         log.debug('Current events in the queue :\n' + '\n'.join(map(str, self.events)))
+        if len(self.events) == 0:
+            log.warn('No more events to be treated')
+            return False
         #Get next finishing event
         eventToLookAt = self.events.pop(0)
         log.info(eventToLookAt)
@@ -220,6 +223,7 @@ class MasterScheduler():
             time.sleep(eventToLookAt.getRemainingTime())
         #The event has finished, treat the consequences
         self.treatEvent(eventToLookAt)
+        return True
 
 
 
@@ -312,6 +316,6 @@ class MasterScheduler():
             key=lambda x : x.priority, reverse=True)
 
     def run(self):
-
-        while(True):
-            self.getNextEvent()
+        active = True
+        while(active):
+            active = self.getNextEvent()
