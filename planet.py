@@ -77,6 +77,9 @@ class Planet():
     def set_building_level(self, building, level):
         self._building_level[building] = level
 
+    def get_resource(self, resource_type):
+        return self.resources[resource_type]
+
     def __str__(self):
         attrs = vars(self)
         return '\n'.join("%s: %s" % item for item in attrs.items())

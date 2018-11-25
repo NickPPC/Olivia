@@ -117,6 +117,10 @@ class Goal():
         log.debug('Goal {} translated in {} tasks'.format(str(self), len(resultingTasks)))
         return resultingTasks
 
+    def __str__(self):
+        description = 'Goal {} on {} with priority {}, level {}'.format(self.object, self.planet.name, self.priority, self.level)
+        return description
+
 class Task():
 
     def __init__(self, object, planet, priority, count, dependencies=None, preexecuteCall = None, postexecuteCall = None):
@@ -165,11 +169,11 @@ class Task():
         self.planet.update_planet_resources()
         if self.cost is None:
             self.price()
-        if METAL in self.cost and self.cost[METAL] > self.planet.metal:
+        if METAL in self.cost and self.cost[METAL] > self.planet.get_resource(METAL):
             return False
-        if CRISTAL in self.cost and self.cost[CRISTAL] > self.planet.cristal:
+        if CRISTAL in self.cost and self.cost[CRISTAL] > self.planet.get_resource(CRISTAL):
             return False
-        if DEUTERIUM in self.cost and self.cost[DEUTERIUM] > self.planet.deuterium:
+        if DEUTERIUM in self.cost and self.cost[DEUTERIUM] > self.planet.get_resource(DEUTERIUM):
             return False
 
         return True
