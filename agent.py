@@ -18,8 +18,14 @@ import utils
 log = utils.get_module_logger(__name__)
 
 
-def init_driver(config):
-    driver = webdriver.Firefox()
+def init_driver(config, no_display):
+    profile = webdriver.FirefoxProfile()
+
+    if no_display:
+        #Block images
+        profile.set_preference("permissions.default.image", 2)
+
+    driver = webdriver.Firefox(firefox_profile=profile)
 
     connection.driver = driver
     buildings.driver = driver
@@ -44,15 +50,16 @@ parser.add_argument("-f", "--configFile", help="path to the JSON config file", d
 if __name__ == '__main__':
 
     args = parser.parse_args()
+    no_display = not args.display and not args.manual
 
-    if not args.display and not args.manual:
+    if no_display:
         display = Display(visible=0, size=(1280, 1024))
         display.start()
 
     with open(args.configFile) as file:
         config = json.load(file)
 
-    driver = init_driver(config)
+    driver = init_driver(config, no_display)
     time.sleep(5)
     # Closing first tab
     del driver.window_handles[0]
@@ -72,7 +79,7 @@ if __name__ == '__main__':
             masterScheduler.run()
 
 
-        if not args.display and not args.manual:
+        if no_display:
             driver.quit()
             display.stop()
 
