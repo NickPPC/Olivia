@@ -24,6 +24,8 @@ FISSION_PLANT = 'fissionPlant'
 METAL_SILO = 'metalSilo'
 CRISTAL_SILO = 'cristalSilo'
 DEUTERIUM_SILO = 'deuteriumSilo'
+RESOURCES_BUILDINGS = [METAL_MINE, CRISTAL_MINE, DEUTERIUM_MINE, SOLAR_PLANT,
+                       FISSION_PLANT, METAL_SILO, CRISTAL_SILO, DEUTERIUM_SILO]
 #Facilities
 STATION_BUILDING = 'stationbuilding'
 ROBOTICS_FACTORY = 'roboticsFactory'
@@ -34,6 +36,8 @@ MISSILE_SILO = 'missileSilo'
 NANITE_FACTORY = 'naniteFactory'
 TERRAFORMER = 'terraformer'
 SPACE_DOCK = 'spaceDock'
+FACILITIES_BUILDINGS = [ROBOTICS_FACTORY, SHIPYARD, RESEARCH_LAB, ALLIANCE_DEPOT,
+                        MISSILE_SILO,NANITE_FACTORY, TERRAFORMER, SPACE_DOCK]
 
 
 buildingTranslation = {
@@ -79,30 +83,13 @@ def extract_level_building(buildingName):
 
 def extract_resources_buildings_level(planet):
     go_to_resources()
-    # update_planet_resources(planet)
-    # Production
-    planet.metalMineLevel = extract_level_building(METAL_MINE)
-    planet.cristalMineLevel = extract_level_building(CRISTAL_MINE)
-    planet.deuteriumMineLevel = extract_level_building(DEUTERIUM_MINE)
-    planet.solarPlantLevel = extract_level_building(SOLAR_PLANT)
-    planet.fissionPlantLevel = extract_level_building(FISSION_PLANT)
-    # Storage
-    planet.metalSiloLevel = extract_level_building(METAL_SILO)
-    planet.cristalSiloLevel = extract_level_building(CRISTAL_MINE)
-    planet.deuteriumSiloLevel = extract_level_building(DEUTERIUM_SILO)
+    for building in RESOURCES_BUILDINGS:
+        planet.set_buildings_level(building, extract_level_building(building))
 
 def extract_facilities_buildings_level(planet):
     go_to_facilities()
-    planet.roboticsFactory = extract_level_building(ROBOTICS_FACTORY)
-    planet.shipyard = extract_level_building(SHIPYARD)
-    planet.researchLab = extract_level_building(RESEARCH_LAB)
-    planet.allianceDepot = extract_level_building(ALLIANCE_DEPOT)
-    planet.missileSilo = extract_level_building(MISSILE_SILO)
-    planet.naniteFactory = extract_level_building(NANITE_FACTORY)
-    planet.terraformer = extract_level_building(TERRAFORMER)
-    planet.spaceDock = extract_level_building(SPACE_DOCK)
-
-
+    for building in FACILITIES_BUILDINGS:
+        planet.set_buildings_level(building, extract_level_building(building))
 
 class BuildingScheduler():
 

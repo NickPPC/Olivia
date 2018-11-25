@@ -66,7 +66,7 @@ class Event():
 
 class Goal():
 
-    def __init__(self, object, level, planet, priority, count=1):
+    def __init__(self, object, planet, priority, level = -1, count=1):
         self.object = object
         self.level = level
         self.planet = planet
@@ -83,10 +83,37 @@ class Goal():
         else:
             return None
 
+    def is_building(self):
+        return Goal.getType(self.object) == buildings.BUILDINGS
+
+    def is_research(self):
+        return Goal.getType(self.object) == research.RESEARCH
+
+    def level_to_build(self):
+        if self.is_building():
+            return (self.planet.get_bulding_level(self.object) - self.level)
+        if self.is_research():
+            # TODO: research
+            return 1
+
     def generateTasks(self):
+        n = 1
+        if self.level > 0:
+            n = self.level_to_build()
+
+        resultingTasks = []
+        dependency_id = None
+        for i in range(n):
+            priority = self.priority * math.pow(1.2, i)
+            if dependency_id:
+                newTask = Task(self.object, self.planet, priority, self.count, dependencies=[dependency_id])
+            else:
+                newTask = Task(self.object, self.planet, priority, self.count)
+
+            dependency_id = newTask.id
+            resultingTasks.append(newTask)
 
         # TODO: cascade requirement as new linked tasks
-        resultingTasks = [Task(self.object, self.planet, self.priority, self.count)]
         log.debug('Goal {} translated in {} tasks'.format(str(self), len(resultingTasks)))
         return resultingTasks
 
@@ -196,9 +223,12 @@ class MasterScheduler():
         goals = []
         for g in configs['goals']:
             count = 1
+            level = -1
+            if 'level' in g:
+                level = g['level']
             if 'count' in g:
                 count = g['count']
-            goals.append(Goal(g['what'], g['level'], self.empire.planets[g['planet']], g['priority'], count))
+            goals.append(Goal(g['what'], self.empire.planets[g['planet']], g['priority'], level, count))
 
         tasks = []
         for goal in goals:

@@ -7,6 +7,7 @@ import json
 METAL = 'metal'
 CRISTAL = 'cristal'
 DEUTERIUM = 'deuterium'
+ENERGY = 'energy'
 
 def get_module_logger(mod_name):
   logger = logging.getLogger(mod_name)
