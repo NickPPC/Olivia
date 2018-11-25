@@ -91,7 +91,7 @@ class Goal():
 
     def level_to_build(self):
         if self.is_building():
-            return (self.planet.get_building_level(self.object) - self.level)
+            return (self.level - self.planet.get_building_level(self.object))
         if self.is_research():
             # TODO: research
             return 1
