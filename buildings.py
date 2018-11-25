@@ -84,12 +84,12 @@ def extract_level_building(buildingName):
 def extract_resources_buildings_level(planet):
     go_to_resources()
     for building in RESOURCES_BUILDINGS:
-        planet.set_buildings_level(building, extract_level_building(building))
+        planet.set_building_level(building, extract_level_building(building))
 
 def extract_facilities_buildings_level(planet):
     go_to_facilities()
     for building in FACILITIES_BUILDINGS:
-        planet.set_buildings_level(building, extract_level_building(building))
+        planet.set_building_level(building, extract_level_building(building))
 
 class BuildingScheduler():
 

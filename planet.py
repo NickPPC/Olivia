@@ -71,7 +71,7 @@ class Planet():
         self.update_planet_resources()
         self.update_buildings_level()
 
-    def get_bulding_level(self, building):
+    def get_building_level(self, building):
         return self._building_level[building]
 
     def set_building_level(self, building, level):
