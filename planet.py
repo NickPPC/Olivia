@@ -23,7 +23,8 @@ class Planet():
     production = {
         METAL: 0,
         CRISTAL: 0,
-        DEUTERIUM: 0
+        DEUTERIUM: 0,
+        ENERGY: 0
     }
     # Buildings
     _building_level = {
@@ -81,8 +82,8 @@ class Planet():
         return self.resources[resource_type]
 
     def __str__(self):
-        attrs = vars(self)
-        return '\n'.join("%s: %s" % item for item in attrs.items())
+        description = 'Resources : {}\nProduction : {}\n\nBuildings : {}'.format(self.resources, self.production, self._building_level)
+        return description
 
 
 
