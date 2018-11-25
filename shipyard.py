@@ -44,31 +44,31 @@ ATTACK_MISSILE = 'interplanetarMissile'
 
 deviceTranslation = {
     #Shipyard
-    LIGHT_FIGHTER : (SHIPYARD, 'details204'),
-    HEAVY_FIGHTER : (SHIPYARD, 'details205'),
-    CRUISER: (SHIPYARD, 'details206'),
-    BATTLESHIP: (SHIPYARD, 'details207'),
-    BATTLECRUISER: (SHIPYARD, 'details215'),
-    BOMBER: (SHIPYARD, 'details211'),
-    DESTROYER: (SHIPYARD, 'details213'),
-    DEATHSTAR: (SHIPYARD, 'details214'),
-    SMALL_TRANSPORTER: (SHIPYARD, 'details202'),
-    LARGE_TRANSPORTER: (SHIPYARD, 'details203'),
-    COLONY_SHIP: (SHIPYARD, 'details208'),
-    RECYCLER: (SHIPYARD, 'details209'),
-    SPY_PROBE: (SHIPYARD, 'details210'),
-    SOLAR_SATELLITE: (SHIPYARD, 'details212'),
+    LIGHT_FIGHTER : (SHIPYARD, 'military.button1', 'details204'),
+    HEAVY_FIGHTER : (SHIPYARD, 'military.button2', 'details205'),
+    CRUISER: (SHIPYARD, 'military.button3', 'details206'),
+    BATTLESHIP: (SHIPYARD, 'military.button4', 'details207'),
+    BATTLECRUISER: (SHIPYARD, 'military.button5', 'details215'),
+    BOMBER: (SHIPYARD, 'military.button6', 'details211'),
+    DESTROYER: (SHIPYARD, 'military.button7', 'details213'),
+    DEATHSTAR: (SHIPYARD, 'military.button8', 'details214'),
+    SMALL_TRANSPORTER: (SHIPYARD, 'civil.button1', 'details202'),
+    LARGE_TRANSPORTER: (SHIPYARD, 'civil.button2', 'details203'),
+    COLONY_SHIP: (SHIPYARD, 'civil.button3', 'details208'),
+    RECYCLER: (SHIPYARD, 'civil.button4', 'details209'),
+    SPY_PROBE: (SHIPYARD, 'civil.button5', 'details210'),
+    SOLAR_SATELLITE: (SHIPYARD, 'civil.button6', 'details212'),
     #Defense
-    MISSILE_LAUCHER : (DEFENSE, 'details401'),
-    LIGHT_LASER_DEFENSE: (DEFENSE, 'details402'),
-    HEAVY_LASER_DEFENSE: (DEFENSE, 'details403'),
-    ION_CANON: (DEFENSE, 'details404'),
-    GAUSS_CANON: (DEFENSE, 'details405'),
-    PLASMA_CANON: (DEFENSE, 'details406'),
-    SMALL_SHIELD: (DEFENSE, 'details407'),
-    LARGE_SHIELD: (DEFENSE, 'details408'),
-    DEFENSE_MISSILE: (DEFENSE, 'details502'),
-    ATTACK_MISSILE: (DEFENSE, 'details503'),
+    MISSILE_LAUCHER : (DEFENSE, 'defense401', 'details401'),
+    LIGHT_LASER_DEFENSE: (DEFENSE, 'defense402', 'details402'),
+    HEAVY_LASER_DEFENSE: (DEFENSE, 'defense403', 'details403'),
+    ION_CANON: (DEFENSE, 'defense404', 'details404'),
+    GAUSS_CANON: (DEFENSE, 'defense405', 'details405'),
+    PLASMA_CANON: (DEFENSE, 'defense406', 'details406'),
+    SMALL_SHIELD: (DEFENSE, 'defense407', 'details407'),
+    LARGE_SHIELD: (DEFENSE, 'defense408', 'details408'),
+    DEFENSE_MISSILE: (DEFENSE, 'defense502', 'details502'),
+    ATTACK_MISSILE: (DEFENSE, 'defense503', 'details503'),
 }
 
 def go_to_shipyard():
@@ -89,3 +89,25 @@ def extract_level_device(deviceName):
         .find_element_by_class_name('level').get_attribute('innerHTML').strip()
 
     return level_extraction(text)
+
+class ShipyardScheduler():
+
+    blob = 0
+
+    def __init__(self):
+        self.blob = 1
+
+    def click_device_element(self, deviceName):
+
+        go_to(deviceName)
+
+        driver.find_element_by_id(deviceTranslation[deviceName][2]).click()
+
+    def get_device_cost(self, deviceName=None):
+
+        #If deviceName is None it means the proper device was already clicked
+        if deviceName is not None:
+            self.click_device_Element(deviceName)
+            time.sleep(2)
+        costList = driver.find_element_by_id('costs')
+        return cost_extraction(costList)

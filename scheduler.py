@@ -5,6 +5,7 @@ import buildings
 import fleet
 import time
 import menu
+import shipyard
 from utils import *
 
 random.seed()
@@ -317,5 +318,8 @@ class MasterScheduler():
 
     def run(self):
         active = True
+        shipyardScheduler = ShipyardScheduler()
+        log.info('light fighter cost: {}'.format(shipyardScheduler.get_device_cost(LIGHT_FIGHTER)))
         while(active):
-            active = self.getNextEvent()
+            #active = self.getNextEvent()
+            active = True
