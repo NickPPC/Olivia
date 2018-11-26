@@ -92,10 +92,8 @@ def extract_level_device(deviceName):
 
 class ShipyardScheduler():
 
-    blob = 0
-
     def __init__(self):
-        self.blob = 1
+        pass
 
     def click_device_element(self, deviceName):
 
@@ -107,7 +105,16 @@ class ShipyardScheduler():
 
         #If deviceName is None it means the proper device was already clicked
         if deviceName is not None:
-            self.click_device_Element(deviceName)
+            self.click_device_element(deviceName)
             time.sleep(2)
         costList = driver.find_element_by_id('costs')
         return cost_extraction(costList)
+
+    def set_device_construction_number(self, deviceName=None, deviceNumber=0):
+
+        #If devineName is None or deviceNumber is 0, it means the function is useless
+        if (deviceName is not None) and (deviceNumber is not 0):
+            self.click_device_element(deviceName)
+            time.sleep(2)
+            inputElement = driver.find_element_by_id('number')
+            inputElement.send_keys('{}'.format(deviceNumber))

@@ -318,8 +318,8 @@ class MasterScheduler():
 
     def run(self):
         active = True
-        shipyardScheduler = ShipyardScheduler()
-        log.info('light fighter cost: {}'.format(shipyardScheduler.get_device_cost(LIGHT_FIGHTER)))
+        shipyardScheduler = shipyard.ShipyardScheduler()
+        shipyardScheduler.set_device_construction_number(shipyard.LIGHT_FIGHTER, 10)
         while(active):
             #active = self.getNextEvent()
             active = True
