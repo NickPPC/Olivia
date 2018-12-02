@@ -1,8 +1,7 @@
 import logging
 
 from buildings import *
-from research import extract_research_level
-from research import ResearchScheduler
+from research import *
 import menu
 from utils import *
 driver = None
@@ -12,6 +11,7 @@ log = get_module_logger(__name__)
 
 class Planet():
     name = None
+    empire = None
     #Resources
     resources = {
         METAL: 0,
@@ -89,22 +89,24 @@ class Planet():
 
 class Empire():
 
-    energyTech = 0
-    laserTech = 0
-    ionTech = 0
-    plasmaTech = 0
-    hyperspaceTech = 0
-    combustionDrive = 0
-    propulsionDrive = 0
-    hyperspaceDrive = 0
-    espionageTech = 0
-    computerTech = 0
-    astrophysicsTech = 0
-    intergalacticResearchNetwork = 0
-    gravitonTech = 0
-    weaponsTech = 0
-    shieldTech = 0
-    armorTech = 0
+    _tech_level = {
+        ENERGY_TECH : 0,
+        LASER_TECH : 0,
+        ION_TECH : 0,
+        PLASMA_TECH: 0,
+        HYPERSPACE_TECH : 0,
+        COMBUSTION_DRIVE : 0,
+        PROPULSION_DRIVE : 0,
+        HYPERSPACE_DRIVE : 0,
+        ESPIONAGE_TECH : 0,
+        COMPUTER_TECH : 0,
+        ASTROPHYSICS_TECH : 0,
+        INTERGALACTIC_RESEARCH_NETWORK :0,
+        GRAVITON_TECH : 0,
+        WEAPONS_TECH : 0,
+        SHIELD_TECH : 0,
+        ARMOR_TECH : 0,
+    }
 
     
     def __init__(self, researchPlanet=None):
@@ -114,6 +116,7 @@ class Empire():
 
     def add_planet(self, planet):
         self.planets[planet.name] = planet
+        planet.empire = self
 
     def generate_planets(self, researchPlanet):
         planetNames = menu.list_planets()
@@ -126,6 +129,12 @@ class Empire():
 
     def update_research_level(self):
         extract_research_level(self)
+
+    def get_research_level(self, tech_name):
+        return self._tech_level[tech_name]
+
+    def set_research_level(self, tech_name, level):
+        self._tech_level[tech_name] = level
 
 
     def __str__(self):

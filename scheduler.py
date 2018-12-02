@@ -93,8 +93,9 @@ class Goal():
         if self.is_building():
             return (self.level - self.planet.get_building_level(self.object))
         if self.is_research():
-            # TODO: research
-            return 1
+            return (self.level - self.planet.empire.get_research_level(self.object))
+        log.warn('Unhandled type for this goal ({} : {}), default to one level'.format(Goal.getType(self.object), self.object))
+        return 1
 
     def generateTasks(self):
         n = 1
@@ -164,7 +165,7 @@ class Task():
             self.cost = self.planet.researchScheduler.getTechCost(self.object)
         else:
             log.warn('This type of task pricing ({}) is not yet implemented'.format(Goal.getType(self.object)))
-        #TODO:other cases (research, fleet ...)
+        #TODO:other cases (fleet ...)
     def isAffordable(self):
         self.planet.update_planet_resources()
         if self.cost is None:

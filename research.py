@@ -30,6 +30,11 @@ WEAPONS_TECH = 'weaponsTech'
 SHIELD_TECH = 'shieldTech'
 ARMOR_TECH = 'armorTech'
 
+TECHNOLOGIES = [ENERGY_TECH,LASER_TECH, ION_TECH ,PLASMA_TECH, HYPERSPACE_TECH,
+                COMBUSTION_DRIVE, PROPULSION_DRIVE, HYPERSPACE_DRIVE, ESPIONAGE_TECH,
+                COMPUTER_TECH, ASTROPHYSICS_TECH, INTERGALACTIC_RESEARCH_NETWORK,
+                GRAVITON_TECH, WEAPONS_TECH, SHIELD_TECH, ARMOR_TECH]
+
 researchTranslation = {
     ENERGY_TECH : 'details113',
     LASER_TECH : 'details120',
@@ -72,22 +77,8 @@ def extract_level_technology(techName):
 
 def extract_research_level(empire):
     go_to_research()
-    empire.energyTech = extract_level_technology(ENERGY_TECH)
-    empire.laserTech = extract_level_technology(LASER_TECH)
-    empire.ionTech = extract_level_technology(ION_TECH)
-    empire.plasmaTech = extract_level_technology(PLASMA_TECH)
-    empire.hyperspaceTech = extract_level_technology(HYPERSPACE_TECH)
-    empire.combustionDrive = extract_level_technology(COMBUSTION_DRIVE)
-    empire.propulsionDrive = extract_level_technology(PROPULSION_DRIVE)
-    empire.hyperspaceDrive = extract_level_technology(HYPERSPACE_DRIVE)
-    empire.espionageTech = extract_level_technology(ESPIONAGE_TECH)
-    empire.computerTech = extract_level_technology(COMPUTER_TECH)
-    empire.astrophysicsTech = extract_level_technology(ASTROPHYSICS_TECH)
-    empire.intergalacticResearchNetwork = extract_level_technology(INTERGALACTIC_RESEARCH_NETWORK)
-    empire.gravitonTech = extract_level_technology(GRAVITON_TECH)
-    empire.weaponsTech = extract_level_technology(WEAPONS_TECH)
-    empire.shieldTech = extract_level_technology(SHIELD_TECH)
-    empire.armorTech = extract_level_technology(ARMOR_TECH)
+    for tech in TECHNOLOGIES:
+        empire.set_research_level(tech, extract_level_technology(tech))
 
 class ResearchScheduler():
 
