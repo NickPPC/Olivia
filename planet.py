@@ -10,45 +10,45 @@ log = get_module_logger(__name__)
 
 
 class Planet():
-    name = None
-    empire = None
-    #Resources
-    resources = {
-        METAL: 0,
-        CRISTAL: 0,
-        DEUTERIUM: 0,
-        ENERGY: 0
-    }
-    #Production
-    production = {
-        METAL: 0,
-        CRISTAL: 0,
-        DEUTERIUM: 0,
-        ENERGY: 0
-    }
-    # Buildings
-    _building_level = {
-        #Resources buildings
-        METAL_MINE: 0,
-        CRISTAL_MINE: 0,
-        DEUTERIUM_MINE: 0,
-        SOLAR_PLANT: 0,
-        FISSION_PLANT: 0,
-        METAL_SILO: 0,
-        CRISTAL_SILO: 0,
-        DEUTERIUM_SILO: 0,
-        # Facilities buildings
-        ROBOTICS_FACTORY: 0,
-        SHIPYARD: 0,
-        RESEARCH_LAB: 0,
-        ALLIANCE_DEPOT: 0,
-        MISSILE_SILO: 0,
-        NANITE_FACTORY: 0,
-        TERRAFORMER: 0,
-        SPACE_DOCK: 0
-    }
+
 
     def __init__(self, name, isResearchPlanet):
+        self.empire = None
+        # Resources
+        self.resources = {
+            METAL: 0,
+            CRISTAL: 0,
+            DEUTERIUM: 0,
+            ENERGY: 0
+        }
+        # Production
+        self.production = {
+            METAL: 0,
+            CRISTAL: 0,
+            DEUTERIUM: 0,
+            ENERGY: 0
+        }
+        # Buildings
+        self._building_level = {
+            # Resources buildings
+            METAL_MINE: 0,
+            CRISTAL_MINE: 0,
+            DEUTERIUM_MINE: 0,
+            SOLAR_PLANT: 0,
+            FISSION_PLANT: 0,
+            METAL_SILO: 0,
+            CRISTAL_SILO: 0,
+            DEUTERIUM_SILO: 0,
+            # Facilities buildings
+            ROBOTICS_FACTORY: 0,
+            SHIPYARD: 0,
+            RESEARCH_LAB: 0,
+            ALLIANCE_DEPOT: 0,
+            MISSILE_SILO: 0,
+            NANITE_FACTORY: 0,
+            TERRAFORMER: 0,
+            SPACE_DOCK: 0
+        }
         self.name = name
         self.full_update()
         self.buildingScheduler = BuildingScheduler(name)
@@ -82,7 +82,7 @@ class Planet():
         return self.resources[resource_type]
 
     def __str__(self):
-        description = 'Resources : {}\nProduction : {}\n\nBuildings : {}'.format(self.resources, self.production, self._building_level)
+        description = '{}\nResources : {}\nProduction : {}\n\nBuildings : {}'.format(self.name, self.resources, self.production, self._building_level)
         return description
 
 
@@ -120,6 +120,7 @@ class Empire():
 
     def generate_planets(self, researchPlanet):
         planetNames = menu.list_planets()
+        log.debug(str(planetNames))
         for planetName in planetNames:
             doesResearch = False
             if researchPlanet is not None and planetName == researchPlanet:
