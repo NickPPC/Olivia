@@ -13,6 +13,7 @@ import research
 import fleet
 import shipyard
 import scheduler
+import galaxy
 import utils
 
 log = utils.get_module_logger(__name__)
@@ -34,6 +35,7 @@ def init_driver(config, no_display):
     research.driver = driver
     fleet.driver = driver
     shipyard.driver = driver
+    galaxy.driver = driver
 
     connection.connect(config)
 
@@ -86,3 +88,5 @@ if __name__ == '__main__':
     except Exception as e:
         log.error('Something went very wrong', str(e))
         driver.quit()
+
+    # galaxy.crawl_galaxy()

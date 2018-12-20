@@ -20,6 +20,9 @@ def navigate_to_tab(tabName):
 def navigate_to_overview():
     navigate_to_tab('overview')
 
+def navigate_to_galaxy():
+    navigate_to_tab('galaxy')
+
 def navigate_to_planet(planetName):
 
     planetLinks = driver.find_element_by_id('planetList').find_elements_by_class_name('planetlink')
