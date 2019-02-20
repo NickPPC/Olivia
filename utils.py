@@ -1,13 +1,17 @@
 import math
 import logging
 import json
+from model.resources import *
 
+_driver = None
 
+def set_driver(new_driver):
+    global _driver
+    _driver = new_driver
 
-METAL = 'metal'
-CRISTAL = 'cristal'
-DEUTERIUM = 'deuterium'
-ENERGY = 'energy'
+def get_driver():
+    global _driver
+    return _driver
 
 def get_module_logger(mod_name):
   logger = logging.getLogger(mod_name)
@@ -120,3 +124,12 @@ def level_extraction(levelElementText):
             levelElementText = levelElementText[:i - 1]
             levelElementText.strip()
     return int(levelElementText)
+
+def remove_ad():
+    #Removing ad
+    try:
+        cloaseAdZone = _driver.find_element_by_class_name('openX_int_closeButton')
+        closeAdButton = cloaseAdZone.find_element_by_tag_name('a')
+        closeAdButton.click()
+    except:
+        pass

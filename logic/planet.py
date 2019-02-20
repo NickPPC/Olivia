@@ -1,11 +1,12 @@
 import logging
 
-from buildings import *
-from research import *
-import menu
+from navigation.buildings import extract_facilities_buildings_level, extract_resources_buildings_level
+from navigation.research import  extract_research_level
+import navigation.menu as menu
+from utils import get_driver as driver
 from utils import *
-driver = None
-
+from model.buildings import *
+from model.research import *
 log = get_module_logger(__name__)
 
 
@@ -51,21 +52,25 @@ class Planet():
         }
         self.name = name
         self.full_update()
-        self.buildingScheduler = BuildingScheduler(name)
-        if isResearchPlanet:
-            self.researchScheduler = ResearchScheduler(name)
-
+       
     def update_buildings_level(self):
-        extract_resources_buildings_level(self)
-        extract_facilities_buildings_level(self)
+        building_levels = extract_resources_buildings_level(self.name)
+        building_levels.update(extract_facilities_buildings_level(self.name))
+
+        for building, level in building_levels.items():
+            self.set_building_level(building, level)
+
+        log.debug('Building levels of {} updated'.format(self.name))
+
 
 
     def update_planet_resources(self):
         menu.navigate_to_planet(self.name)
-        self.resources[METAL] = int(driver.find_element_by_id('resources_metal').get_attribute('innerHTML').replace('.', ''))
-        self.resources[CRISTAL] = int(driver.find_element_by_id('resources_crystal').get_attribute('innerHTML').replace('.', ''))
-        self.resources[DEUTERIUM] = int(driver.find_element_by_id('resources_deuterium').get_attribute('innerHTML').replace('.', ''))
-        self.resources[ENERGY] = int(driver.find_element_by_id('resources_energy').get_attribute('innerHTML').replace('.', ''))
+        self.resources[METAL] = int(driver().find_element_by_id('resources_metal').get_attribute('innerHTML').replace('.', ''))
+        self.resources[CRISTAL] = int(driver().find_element_by_id('resources_crystal').get_attribute('innerHTML').replace('.', ''))
+        self.resources[DEUTERIUM] = int(driver().find_element_by_id('resources_deuterium').get_attribute('innerHTML').replace('.', ''))
+        self.resources[ENERGY] = int(driver().find_element_by_id('resources_energy').get_attribute('innerHTML').replace('.', ''))
+        log.debug('Resource of {} updated'.format(self.name))
 
     def full_update(self):
         menu.navigate_to_planet(self.name)

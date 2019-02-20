@@ -5,16 +5,9 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from pyvirtualdisplay import Display
 import json
-import connection
-import planet
-import buildings
-import menu
-import research
-import fleet
-import shipyard
-import scheduler
-import galaxy
+import navigation.connection as connection
 import utils
+import logic.scheduler as scheduler
 
 log = utils.get_module_logger(__name__)
 
@@ -27,18 +20,9 @@ def init_driver(config, no_display):
         profile.set_preference("permissions.default.image", 2)
 
     driver = webdriver.Firefox(firefox_profile=profile)
-
-    connection.driver = driver
-    buildings.driver = driver
-    planet.driver = driver
-    menu.driver = driver
-    research.driver = driver
-    fleet.driver = driver
-    shipyard.driver = driver
-    galaxy.driver = driver
+    utils.set_driver(driver)
 
     connection.connect(config)
-
 
     return driver
 
@@ -72,6 +56,16 @@ if __name__ == '__main__':
     # Focusing on open tab
     driver.switch_to.window(driver.window_handles[0])
 
+    time.sleep(2)
+
+    #Removing ad
+    try:
+        cloaseAdZone = driver.find_element_by_class_name('openX_int_closeButton')
+        closeAdButton = cloaseAdZone.find_element_by_tag_name('a')
+        closeAdButton.click()
+    except:
+        pass
+
 
     try:
         if not args.manual:
@@ -86,7 +80,5 @@ if __name__ == '__main__':
             display.stop()
 
     except Exception as e:
-        log.error('Something went very wrong', str(e))
+        log.error('Something went very wrong : {}'.format(str(e)))
         driver.quit()
-
-    # galaxy.crawl_galaxy()

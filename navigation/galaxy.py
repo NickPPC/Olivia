@@ -1,13 +1,11 @@
 import time
-import menu
-import planet
+import navigation.menu as menu
 from utils import *
+from utils import get_driver as driver
 from selenium.webdriver.common.action_chains import ActionChains
-import scheduler
+import logic.scheduler as scheduler
 
 log = get_module_logger(__name__)
-
-driver = None
 
 def crawl_galaxy(max_systems = 10, max_galaxy = 0):
     menu.navigate_to_galaxy()
@@ -50,9 +48,9 @@ def scan_system(galaxy, system):
 
     planets_found = []
 
-    table = driver.find_elements_by_tag_name('tbody')[0]
+    table = driver().find_elements_by_tag_name('tbody')[0]
     rows = table.find_elements_by_tag_name('tr')
-    galaxy_tooltips = driver.find_elements_by_class_name('galaxyTooltip')
+    galaxy_tooltips = driver().find_elements_by_class_name('galaxyTooltip')
     player_details = []
     for gt in galaxy_tooltips:
         if 'player' in gt.get_attribute('id'):
@@ -85,14 +83,14 @@ def scan_system(galaxy, system):
 
 
 def get_current_address():
-    galaxy = driver.find_element_by_id('galaxy_input').get_attribute('value')
-    system = driver.find_element_by_id('system_input').get_attribute('value')
+    galaxy = driver().find_element_by_id('galaxy_input').get_attribute('value')
+    system = driver().find_element_by_id('system_input').get_attribute('value')
     return (int(galaxy), int(system))
 
 def go_to_address(galaxy, system):
-    driver.find_element_by_id('galaxy_input').send_keys(str(galaxy))
-    driver.find_element_by_id('system_input').send_keys(str(system))
-    buttons = driver.find_elements_by_class_name('btn_blue')
+    driver().find_element_by_id('galaxy_input').send_keys(str(galaxy))
+    driver().find_element_by_id('system_input').send_keys(str(system))
+    buttons = driver().find_elements_by_class_name('btn_blue')
     buttons[0].click()
     # for i in range(len(buttons)):
     #     if 'Go' in buttons[i].get_attribute('innerHTML'):

@@ -1,11 +1,12 @@
 import random
-import planet
-import research
-import buildings
-import fleet
+import logic.planet as planet
+import navigation.research as research
+import navigation.buildings as buildings
+import navigation.shipyard as shipyard
+import navigation.fleet as fleet
 import time
-import menu
 from utils import *
+from model.events import Event
 
 random.seed()
 currentTaskId = 0
@@ -18,51 +19,6 @@ def generateTaskId():
     currentTaskId +=1
     return currentTaskId
 
-class Event():
-
-    BUILDING_IN_PROGRESS = 'Building in progress'
-    RESEARCH_IN_PROGRESS = 'Research in progress'
-    SHIPYARD_LOCKED = 'Shipyard is reserved for upgrade'
-    RESEARCH_LAB_LOCKED = 'Research lab is reserved for upgrade'
-    FLEET_ARRIVING = 'Fleet arriving'
-    SPYING_IN_PROGRESS = 'Espionage probe(s) in flight'
-    NO_MONEY = 'Not enough resources'
-    NEED_ENERGY = 'Requires more energy'
-    ERROR = 'Error !!'
-    #TODO: create more event type (attacks, ...)
-
-
-    def __init__(self, type, duration, planetName, description=''):
-        log.debug('Event creation : {} , {}, {}, {}'.format(type, duration, planetName, description))
-        self.type = type
-        self.creationTime = time.time()
-        # + 3 to make sure the pages have time to open and auto refresh
-        self.duration = duration + 3
-        self.description = description
-        self.planetName = planetName
-        self.callback = None
-
-    def getComplitionTime(self):
-        return self.creationTime + self.duration
-
-    def getRemainingTime(self):
-        return  self.duration - (time.time() - self.creationTime)
-
-
-    def __str__(self):
-
-        if self.getRemainingTime() > 0:
-            finishTime = 'finishing in {}'.format(seconds_to_formatted_time(self.getRemainingTime()))
-        else :
-            finishTime = 'has ended'
-        result = '{} started {} ago, {} on planet {}'\
-            .format(self.type, seconds_to_formatted_time(time.time()- self.creationTime ),
-                                finishTime, self.planetName)
-
-        if self.description != '':
-            result = '{} : {}'.format(result, self.description)
-
-        return result
 
 class Goal():
 
@@ -79,7 +35,8 @@ class Goal():
             return buildings.BUILDINGS
         elif object in research.researchTranslation:
             return research.RESEARCH
-        #TODO: fleet/defense
+        elif object in shipyard.deviceTranslation:
+            return shipyard.SHIPYARD
         else:
             return None
 
@@ -88,6 +45,9 @@ class Goal():
 
     def is_research(self):
         return Goal.getType(self.object) == research.RESEARCH
+
+    def is_shipyard(self):
+        return Goal.getType(self.object) == shipyard.SHIPYARD
 
     def level_to_build(self):
         if self.is_building():
@@ -143,13 +103,12 @@ class Task():
 
         resultingEvent = None
 
-        menu.navigate_to_planet(self.planet.name)
         if Goal.getType(self.object) == buildings.BUILDINGS:
             log.debug('Bulding task : {}'.format(self.__str__()))
-            resultingEvent = self.planet.buildingScheduler.upgrade_building(self.object)
+            resultingEvent = buildings.upgrade_building(self.planet.name, self.object)
         elif Goal.getType(self.object) == research.RESEARCH:
             log.debug('Researching task : {}'.format(self.__str__()))
-            resultingEvent = self.planet.researchScheduler.researchTech(self.object)
+            resultingEvent = research.researchTech(self.planet.name, self.object)
         else:
             log.warn('This type of task ({}) is not yet implemented'.format(Goal.getType(self.object)))
         #TODO:other cases (shipyard, fleet ...)
@@ -158,11 +117,10 @@ class Task():
         return resultingEvent
 
     def price(self):
-        menu.navigate_to_planet(self.planet.name)
         if Goal.getType(self.object) == buildings.BUILDINGS:
-            self.cost = self.planet.buildingScheduler.getBuildingCost(self.object)
+            self.cost = buildings.getBuildingCost(self.planet.name, self.object)
         elif Goal.getType(self.object) == research.RESEARCH:
-            self.cost = self.planet.researchScheduler.getTechCost(self.object)
+            self.cost = research.getTechCost(self.planet.name, self.object)
         else:
             log.warn('This type of task pricing ({}) is not yet implemented'.format(Goal.getType(self.object)))
         #TODO:other cases (fleet ...)
@@ -201,21 +159,21 @@ class MasterScheduler():
         log.debug(self.events)
 
     def lockResearchLab(self):
-        self.empire.planets[self.researchPlanet].researchScheduler.lockedForUpgrade = True
-
+        #TODO
+        pass
     def unlockResearchLab(self):
-        self.empire.planets[self.researchPlanet].researchScheduler.lockedForUpgrade = False
-
+        #TODO
+        pass
     #TODO lock/unlock shipyard
 
     def seedEvents(self):
         seeds = []
         #Buildings
         for p in self.empire.planets:
-            seeds.append(Event(Event.BUILDING_IN_PROGRESS, self.empire.planets[p].buildingScheduler.nextTimeAvailable - time.time(), p))
+            seeds.append(Event(Event.BUILDING_IN_PROGRESS, buildings.getNextTimeAvailability(p) - time.time(), p))
         #Research
         seeds.append(Event(Event.RESEARCH_IN_PROGRESS,
-                            self.empire.planets[self.researchPlanet].researchScheduler.nextTimeAvailable - time.time(),
+                            research.getNextTimeAvailability(self.researchPlanet) - time.time(),
                             self.researchPlanet))
         #TODO: fleet movement
         #TODO: shipyard construction
@@ -295,7 +253,7 @@ class MasterScheduler():
                 # We do not do anything
                 log.info('Not doing anything this time on {}'.format(event.planetName))
         else:
-            log.warn('Not yet implemented for {} event :\n'.format(event.type, event))
+            log.warn('Not yet implemented for {} event :\n{}'.format(event.type, event))
 
     def processTask(self, task):
         if task.isAffordable():

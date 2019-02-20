@@ -3,5 +3,14 @@
   "homeUrl" : "",
   "email" : "",
   "password" : "",
-  "universe" : ""
+  "universe" : "",
+  "researchPloanet" : "Homeworld",
+  "goals" : [
+    { 
+      "planet" : "HomeWorld",
+      "what" : "solarPlant",
+      "level" : 10,
+      "priority" : 50
+    }
+  ]
 }
