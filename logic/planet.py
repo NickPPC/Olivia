@@ -77,6 +77,8 @@ class Planet():
 
     def update_planet_resources(self):
         menu.navigate_to_planet(self.name)
+        # Force refresh of resources (after fleet deliveries)
+        menu.navigate_to_overview()
         self.resources[METAL] = int(driver().find_element_by_id('resources_metal').get_attribute('innerHTML').replace('.', ''))
         self.resources[CRISTAL] = int(driver().find_element_by_id('resources_crystal').get_attribute('innerHTML').replace('.', ''))
         self.resources[DEUTERIUM] = int(driver().find_element_by_id('resources_deuterium').get_attribute('innerHTML').replace('.', ''))

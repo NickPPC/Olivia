@@ -104,7 +104,7 @@ def researchTech(planetName, techName):
                                                                                             cost[METAL],
                                                                                             cost[CRISTAL],
                                                                                             cost[DEUTERIUM]))
-        return Event(Event.RESEARCH_IN_PROGRESS, getNextTimeAvailability(planetName) - time.time(), planetName,
+        return Event(Event.RESEARCH_IN_PROGRESS, getNextTimeAvailability() - time.time(), planetName,
                         techName)
 
     except Exception as e:
