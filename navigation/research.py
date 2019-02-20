@@ -37,8 +37,7 @@ def extract_research_level():
     return research_levels
 
 
-def getNextTimeAvailability(planetName):
-    menu.navigate_to_planet(planetName)
+def getNextTimeAvailability():
     menu.navigate_to_overview()
     try:
         timeLeft = driver().find_element_by_id('researchCountdown').get_attribute('innerHTML')

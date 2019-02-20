@@ -3,7 +3,6 @@
   "email" : "",
   "password" : "",
   "universe" : "",
-  "researchPloanet" : "Homeworld",
   "goals" : [
     { 
       "planet" : "HomeWorld",

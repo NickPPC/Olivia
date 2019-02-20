@@ -36,12 +36,12 @@ def extract_quantity_device(planetName, deviceName):
     return level_extraction(text)
 
     
-def getDeviceCost(deviceName):
+def getDeviceCost(deviceName, n=1):
 
     return {
-        METAL: deviceCost[deviceName][0],
-        CRISTAL: deviceCost[deviceName][1],
-        DEUTERIUM: deviceCost[deviceName][2]
+        METAL: n * deviceCost[deviceName][0],
+        CRISTAL: n * deviceCost[deviceName][1],
+        DEUTERIUM: n * deviceCost[deviceName][2]
         }
 
 def _click_device_element(deviceName):

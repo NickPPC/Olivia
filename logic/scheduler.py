@@ -147,13 +147,7 @@ class MasterScheduler():
 
 
     def __init__(self, configs):
-        if research.RESEARCH_PLANET in configs:
-            log.debug('Research planet is specified in configs : {}'.format(research.RESEARCH_PLANET))
-            self.researchPlanet = configs[research.RESEARCH_PLANET]
-        else:
-            log.warn('Research planet is NOT specified in configs : {}'.format(research.RESEARCH_PLANET))
-            self.researchPlanet = None
-        self.empire = planet.Empire(self.researchPlanet)
+        self.empire = planet.Empire()
         self.tasks = self.getTasks(configs)
         self.events = self.seedEvents()
         log.debug(self.events)
@@ -173,8 +167,8 @@ class MasterScheduler():
             seeds.append(Event(Event.BUILDING_IN_PROGRESS, buildings.getNextTimeAvailability(p) - time.time(), p))
         #Research
         seeds.append(Event(Event.RESEARCH_IN_PROGRESS,
-                            research.getNextTimeAvailability(self.researchPlanet) - time.time(),
-                            self.researchPlanet))
+                            research.getNextTimeAvailability() - time.time(),
+                            'Empire'))
         #TODO: fleet movement
         #TODO: shipyard construction
         #TODO: periodic check

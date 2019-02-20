@@ -13,7 +13,7 @@ log = get_module_logger(__name__)
 class Planet():
 
 
-    def __init__(self, name, isResearchPlanet):
+    def __init__(self, name):
         self.empire = None
         # Resources
         self.resources = {
@@ -28,6 +28,12 @@ class Planet():
             CRISTAL: 0,
             DEUTERIUM: 0,
             ENERGY: 0
+        }
+        # Storage
+        self.storage = {
+            METAL : 0,
+            CRISTAL: 0,
+            DEUTERIUM: 0
         }
         # Buildings
         self._building_level = {
@@ -119,23 +125,20 @@ class Empire():
     }
 
     
-    def __init__(self, researchPlanet=None):
+    def __init__(self):
         self.planets = {}
-        self.generate_planets(researchPlanet)
+        self.generate_planets()
         self.update_research_level()
 
     def add_planet(self, planet):
         self.planets[planet.name] = planet
         planet.empire = self
 
-    def generate_planets(self, researchPlanet):
+    def generate_planets(self):
         planetNames = menu.list_planets()
         log.debug(str(planetNames))
         for planetName in planetNames:
-            doesResearch = False
-            if researchPlanet is not None and planetName == researchPlanet:
-                doesResearch = True
-            planet = Planet(planetName, doesResearch)
+            planet = Planet(planetName)
             self.add_planet(planet)
 
     def update_research_level(self):
