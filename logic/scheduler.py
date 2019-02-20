@@ -58,6 +58,7 @@ class Goal():
         return 1
 
     def generateTasks(self):
+        #TODO: handle same element different levels with different priority
         n = 1
         if self.level > 0:
             n = self.level_to_build()
@@ -148,7 +149,7 @@ class MasterScheduler():
 
     def __init__(self, configs):
         self.empire = planet.Empire()
-        self.tasks = self.getTasks(configs)
+        self.tasks = self.getStartingTasks(configs)
         self.events = self.seedEvents()
         log.debug(self.events)
 
@@ -162,13 +163,11 @@ class MasterScheduler():
 
     def seedEvents(self):
         seeds = []
-        #Buildings
         for p in self.empire.planets:
+            #Buildings
             seeds.append(Event(Event.BUILDING_IN_PROGRESS, buildings.getNextTimeAvailability(p) - time.time(), p))
-        #Research
-        seeds.append(Event(Event.RESEARCH_IN_PROGRESS,
-                            research.getNextTimeAvailability() - time.time(),
-                            'Empire'))
+            #Research
+            seeds.append(Event(Event.RESEARCH_IN_PROGRESS, research.getNextTimeAvailability() - time.time(), p))
         #TODO: fleet movement
         #TODO: shipyard construction
         #TODO: periodic check
@@ -176,7 +175,7 @@ class MasterScheduler():
         return seeds
 
 
-    def getTasks(self, configs):
+    def getStartingTasks(self, configs):
         goals = []
         for g in configs['goals']:
             count = 1
@@ -217,7 +216,7 @@ class MasterScheduler():
     def treatEvent(self, event):
         log.info('Treating event : {}'.format(str(event)))
         if event.callback is not None:
-            log.info('Event callback')
+            log.info('Event callback: {}'.format(event.callback))
             event.callback()
         if event.type == Event.BUILDING_IN_PROGRESS:
             #Building just finished, build next one
@@ -250,6 +249,7 @@ class MasterScheduler():
             log.warn('Not yet implemented for {} event :\n{}'.format(event.type, event))
 
     def processTask(self, task):
+        #TODO : remove affordability check when it is handled by the task picking
         if task.isAffordable():
             resultingEvent = task.execute()
             self.newEvent(resultingEvent)
@@ -262,19 +262,47 @@ class MasterScheduler():
 
 
     def pickTask(self, planetName, type=None):
-        if type is None:
-            relevantTasks = self.filterTasksByPlanet(planetName)
-        else:
-            relevantTasks = self.filterTasks(planetName, type)
-        log.debug('Tasks considered for planet {} :\n{}'.format(planetName, '\n'.join(map(str, relevantTasks))))
-        # TODO: arbitration algorithm based on priority, cost and slotAvailability
-        if len(relevantTasks) > 0:
-            taskToExecute = relevantTasks.pop(0)
-            log.info('Task chosen for {} : {}'.format(planetName, str(taskToExecute)))
-            return taskToExecute
-        else:
-            log.info('No task chosen for {}'.format(planetName))
+        planet_tasks = self.filterTasksByPlanet(planetName)
+        if len(planet_tasks) == 0:
+            log.info('There are no task on this planet')
             return None
+
+        log.debug('Tasks considered for planet {} :\n{}'.format(planetName, '\n'.join(map(str, planet_tasks))))
+
+        top_priority_tasks = self.filter_top_priority_taks(planet_tasks)
+        top_priority_affordable_tasks = self.filter_affordable_tasks(top_priority_tasks)
+        top_priority_executable_tasks = self.filter_executable_tasks(top_priority_affordable_tasks)
+
+        if top_priority_executable_tasks:
+            # Execute a top priority task if possible
+            log.debug('Top priority executable tasks considered for planet {} :\n{}'.format(planetName, '\n'.join(map(str, top_priority_executable_tasks))))
+            return random.choice(top_priority_executable_tasks)
+        else:
+            # Find the highest priority tasks that can be executed
+            top_priority = top_priority_tasks[0].priority
+            highest_priority_tasks = self.filter_executable_tasks(self.filter_affordable_tasks(planet_tasks))
+            if len(highest_priority_tasks) == 0:
+                log.info('No executable task on planet {}'.format(planetName))
+                return None
+            best_alternative = random.choice(highest_priority_tasks)
+            best_executable_priority = best_alternative.priority
+            # Roll the dice and decide if the lower priority task is executed or if we wait to gather money/a slot for the top priority one
+            alpha = 2
+            # p probability of choosing the alternative
+            p = math.exp(alpha * (best_executable_priority - top_priority) / top_priority)
+            if random.random() < p:
+                # Execute alternative
+                log.debug('Executing alternative task with priority {} instead of top priority {} with a probability of {}'
+                            .format(best_executable_priority, top_priority,  p))
+                log.info('Task chosen for {} : {}'.format(planetName, str(best_alternative)))
+                return best_alternative
+            else:
+                # Not executing anything and saving money / waiting for a top priority task to be executable
+                log.debug('NOT executing alternative task with priority {} instead of top priority {} with a probability of {}'
+                            .format(best_executable_priority, top_priority,  p))
+                log.info('No task chosen for {}'.format(planetName))
+                return None
+
 
 
     def newEvent(self, event):
