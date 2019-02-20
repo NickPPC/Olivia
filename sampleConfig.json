@@ -1,6 +1,5 @@
-//Copy and fill this in config.json
 {
-  "homeUrl" : "",
+  "homeUrl" : "Copy and fill this file in config.json",
   "email" : "",
   "password" : "",
   "universe" : "",
