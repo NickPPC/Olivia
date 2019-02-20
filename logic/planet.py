@@ -1,7 +1,7 @@
 import logging
 
-from navigation.buildings import extract_facilities_buildings_level, extract_resources_buildings_level
-from navigation.research import  extract_research_level
+from navigation.buildings import extract_facilities_buildings_level, extract_resources_buildings_level, get_in_progress_building
+from navigation.research import  extract_research_level, get_in_progress_research
 import navigation.menu as menu
 from utils import get_driver as driver
 from utils import *
@@ -59,6 +59,11 @@ class Planet():
 
         for building, level in building_levels.items():
             self.set_building_level(building, level)
+
+        log.debug('Checking in progress construction')
+        in_progress_building = get_in_progress_building(self.name)
+        if in_progress_building is not None:
+            self.set_building_level(in_progress_building, self.get_building_level(in_progress_building) + 1)
 
         log.debug('Building levels of {} updated'.format(self.name))
 
@@ -134,7 +139,17 @@ class Empire():
             self.add_planet(planet)
 
     def update_research_level(self):
-        extract_research_level(self)
+        research_levels = extract_research_level()
+        for tech in research_levels:
+            self.set_research_level(tech, research_levels[tech])
+
+        log.debug('Checking in progress research')
+
+        in_progress_research = get_in_progress_research()
+        if in_progress_research is not None:
+            self.set_research_level(in_progress_research, self.get_research_level(in_progress_research) + 1)
+        
+        log.debug('Research levels updated')
 
     def get_research_level(self, tech_name):
         return self._tech_level[tech_name]
@@ -144,7 +159,8 @@ class Empire():
 
 
     def __str__(self):
-        description = ('\n\n' + 20 *'*' + '\n\n').join(map(str, self.planets.values()))
+        description = str(self._tech_level) + '\n'
+        description += ('\n\n' + 20 *'*' + '\n\n').join(map(str, self.planets.values()))
         return description
 
 

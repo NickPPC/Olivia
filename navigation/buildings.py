@@ -62,8 +62,33 @@ def getNextTimeAvailability(planetName):
         timeLeft = driver().find_element_by_id('Countdown').get_attribute('innerHTML')
         return time.time() + formatted_time_to_seconds(timeLeft)
     except Exception as e:
-        log.warn('Exception {} : {}'.format(type(e).__name__, str(e)))
+        log.warn('Exception {} : {}. Discard if no construction in progress'.format(type(e).__name__, str(e)))
         return 0
+
+def get_in_progress_building(planet_name):
+    menu.navigate_to_planet(planet_name)
+    menu.navigate_to_overview()
+
+    try:
+        building_overview = driver().find_elements_by_class_name('content-box-s')[0]
+        in_progres = building_overview.find_element_by_class_name('first')
+        cancel_link = in_progres.find_elements_by_tag_name('a')[0]
+        cancel_action = cancel_link.get_attribute('onClick')
+        log.debug(cancel_action)
+        # 3 numbers after 'cancelProduction(' (17 letters)
+        item_id = cancel_action[17:19].strip(',')
+
+        x = - len(item_id)
+        for building in buildingTranslation:
+            (_, _, name) = buildingTranslation[building]
+            if item_id in name[x:]:
+                return building
+
+        log.error('building not identified: {}'.format(item_id))
+        return None
+    except Exception as e:
+        log.warn('Exception {} : {}. Discard if no construction in progress'.format(type(e).__name__, str(e)))
+        return None
 
 def _clickBuildingElement(buildingName):
 

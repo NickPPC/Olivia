@@ -11,7 +11,7 @@ log = get_module_logger(__name__)
 def go_to_research():
     menu.navigate_to_tab(RESEARCH)
 
-def extract_level_technology(techName):
+def _extract_level_technology(techName):
 
     text = driver().find_element_by_id(researchTranslation[techName]) \
         .find_element_by_class_name('level').get_attribute('innerHTML').strip()
@@ -28,10 +28,13 @@ def extract_level_technology(techName):
     return int(text)
 
 
-def extract_research_level(empire):
+def extract_research_level():
     go_to_research()
+    research_levels = {}
     for tech in TECHNOLOGIES:
-        empire.set_research_level(tech, extract_level_technology(tech))
+        research_levels[tech] = _extract_level_technology(tech)
+
+    return research_levels
 
 
 def getNextTimeAvailability(planetName):
@@ -44,6 +47,27 @@ def getNextTimeAvailability(planetName):
         log.warn('Exception {} : {}'.format(type(e).__name__, str(e)))
         return 0
 
+def get_in_progress_research():
+    menu.navigate_to_overview()
+
+    try:
+        research_overview = driver().find_elements_by_class_name('content-box-s')[1]
+        in_progres = research_overview.find_element_by_class_name('first')
+        cancel_link = in_progres.find_elements_by_tag_name('a')[0]
+        cancel_action = cancel_link.get_attribute('onClick')
+        log.debug(cancel_action)
+        # 3 numbers after 'cancelResearch(' (15 letters)
+        item_id = cancel_action[15:18]
+
+        for research, details in researchTranslation.items():
+            if item_id in details:
+                return research
+
+        log.error('research not identified: {}'.format(item_id))
+        return None
+    except Exception as e:
+        log.warn('Exception {} : {}. Discard if no researh in progress'.format(type(e).__name__, str(e)))
+        return None
 
 def clickTechElement(planetName, techName):
     menu.navigate_to_planet(planetName)
