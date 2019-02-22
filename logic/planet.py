@@ -7,6 +7,8 @@ from utils import get_driver as driver
 from utils import *
 from model.buildings import *
 from model.research import *
+from model.events import get_type
+
 log = get_module_logger(__name__)
 
 
@@ -56,6 +58,11 @@ class Planet():
             TERRAFORMER: 0,
             SPACE_DOCK: 0
         }
+
+        self._shipyard_locked = False
+        self._shipyard_queue_empty = True
+        self._building_slot_available = True
+
         self.name = name
         self.full_update()
        
@@ -70,6 +77,12 @@ class Planet():
         in_progress_building = get_in_progress_building(self.name)
         if in_progress_building is not None:
             self.set_building_level(in_progress_building, self.get_building_level(in_progress_building) + 1)
+            self.take_building_slot()
+            if in_progress_building == NANITE_FACTORY:
+                self.lock_shipyard()
+                #TODO : add unlock to the event callback
+            if in_progress_building == RESEARCH_LAB:
+                self.empire.lock_research_lab()
 
         log.debug('Building levels of {} updated'.format(self.name))
 
@@ -83,7 +96,7 @@ class Planet():
         self.resources[CRISTAL] = int(driver().find_element_by_id('resources_crystal').get_attribute('innerHTML').replace('.', ''))
         self.resources[DEUTERIUM] = int(driver().find_element_by_id('resources_deuterium').get_attribute('innerHTML').replace('.', ''))
         self.resources[ENERGY] = int(driver().find_element_by_id('resources_energy').get_attribute('innerHTML').replace('.', ''))
-        log.debug('Resource of {} updated'.format(self.name))
+        # log.debug('Resource of {} updated'.format(self.name))
 
     def full_update(self):
         menu.navigate_to_planet(self.name)
@@ -98,6 +111,35 @@ class Planet():
 
     def get_resource(self, resource_type):
         return self.resources[resource_type]
+
+    def can_execute_task(self, task):
+        log.debug('checking for execution of {}:\n{}'.format(task, task.__dict__))
+        if get_type(task.object) == BUILDINGS:
+            # Check special building nanite factory
+            if task.object == NANITE_FACTORY:
+                return self._shipyard_queue_empty and self._building_slot_available
+            else:
+                return self._building_slot_available
+        if get_type(task.object) == SHIPYARD:
+            # TODO:  make sure the shipyard queue cannot be full
+            return not self._shipyard_locked # because of nanite
+        log.error('Not implemented for this task : {}'.format(task))
+
+    def lock_shipyard(self):
+        self._shipyard_locked = True
+    
+    def unlock_shipyard(self):
+        self._shipyard_locked = False
+
+    def take_building_slot(self):
+        self._building_slot_available = False
+
+    def release_building_slot(self):
+        self._building_slot_available = True
+
+    # TODO: deal with shipyard
+    def empty_shipyard_queue(self):
+        self._shipyard_queue_empty = True
 
     def __str__(self):
         description = '{}\nResources : {}\nProduction : {}\n\nBuildings : {}'.format(self.name, self.resources, self.production, self._building_level)
@@ -126,6 +168,8 @@ class Empire():
         ARMOR_TECH : 0,
     }
 
+    _lab_lock = False
+
     
     def __init__(self):
         self.planets = {}
@@ -153,6 +197,7 @@ class Empire():
         in_progress_research = get_in_progress_research()
         if in_progress_research is not None:
             self.set_research_level(in_progress_research, self.get_research_level(in_progress_research) + 1)
+            self.lock_research_lab()
         
         log.debug('Research levels updated')
 
@@ -161,6 +206,25 @@ class Empire():
 
     def set_research_level(self, tech_name, level):
         self._tech_level[tech_name] = level
+
+    def lock_research_lab(self):
+        self._lab_lock = True
+
+    def unlock_research_lab(self):
+        self._lab_lock  = False
+
+    def can_execute_task(self, task):
+        if get_type(task.object) == RESEARCH:
+            return  not self._lab_lock
+        if get_type(task.object) == BUILDINGS:
+            log.debug('checking for execution of building task {}:\n{}'.format(task, task.__dict__))
+            # Check special building research lab
+            if task.object == RESEARCH_LAB:
+                return (not self._lab_lock) and self.planets[task.planet.name].can_execute_task(task)
+            else:
+                return self.planets[task.planet.name].can_execute_task(task)
+        if get_type(task.object) == SHIPYARD:
+            return self.planets[task.planet.name].can_execute_task(task)
 
 
     def __str__(self):

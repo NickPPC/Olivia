@@ -1,5 +1,8 @@
 from utils import get_module_logger, seconds_to_formatted_time
 import time
+from model.buildings import buildingTranslation, BUILDINGS
+from model.research import researchTranslation, RESEARCH
+from model.shipyard import deviceTranslation, SHIPYARD
 
 log = get_module_logger(__name__)
 
@@ -16,6 +19,7 @@ class Event():
     NEED_ENERGY = 'Requires more energy'
     ERROR = 'Error !!'
     SHIPYARD_CONSTRUCTION_IN_PROGRESS = 'Shipard construction in progress'
+    PERIODIC_CHECK = 'Periodic check'
     #TODO: create more event type (attacks, ...)
 
 
@@ -50,3 +54,13 @@ class Event():
             result = '{} : {}'.format(result, self.description)
 
         return result
+
+def get_type(object):
+    if object in buildingTranslation:
+        return BUILDINGS
+    elif object in researchTranslation:
+        return RESEARCH
+    elif object in deviceTranslation:
+        return SHIPYARD
+    else:
+        return None
