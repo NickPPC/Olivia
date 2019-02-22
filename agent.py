@@ -1,5 +1,6 @@
 import argparse
 import logging
+import traceback
 import time
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -80,5 +81,5 @@ if __name__ == '__main__':
             display.stop()
 
     except Exception as e:
-        log.error('Something went very wrong : {}'.format(str(e)))
+        log.error('Something went very wrong : {}\n{}'.format(str(e), traceback.format_exc()))
         driver.quit()

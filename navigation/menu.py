@@ -34,7 +34,6 @@ def navigate_to_planet(planetName):
     remove_ad()
 
     if current_planet == planetName:
-        log.debug('already on the right planet')
         return
 
     planetLinks = driver().find_element_by_id('planetList').find_elements_by_class_name('planetlink')
