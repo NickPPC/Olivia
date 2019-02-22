@@ -140,8 +140,8 @@ class MasterScheduler():
         self.empire = planet.Empire()
         self.tasks = self.getStartingTasks(configs)
         self.events = self.seedEvents()
-        log.debug(self.events)
-        log.debug(self.tasks)
+        log.debug('\n'.join(map(str, self.events)))
+        log.debug('\n'.join(map(str, self.tasks)))
 
     def lockResearchLab(self):
         #TODO
@@ -278,9 +278,9 @@ class MasterScheduler():
             best_alternative = random.choice(highest_priority_tasks)
             best_executable_priority = best_alternative.priority
             # Roll the dice and decide if the lower priority task is executed or if we wait to gather money/a slot for the top priority one
-            alpha = 2
+            alpha = 0.5
             # p probability of choosing the alternative
-            p = math.exp(alpha * (best_executable_priority - top_priority) / top_priority)
+            p = math.exp(alpha * float(best_executable_priority - top_priority) / float(best_executable_priority))
             if random.random() < p:
                 # Execute alternative
                 log.debug('Executing alternative task with priority {} instead of top priority {} with a probability of {}'
