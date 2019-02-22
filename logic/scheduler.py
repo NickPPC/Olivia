@@ -114,17 +114,30 @@ class Task():
         else:
             log.warn('This type of task pricing ({}) is not yet implemented'.format(get_type(self.object)))
         #TODO:other cases (fleet ...)
+
     def isAffordable(self):
         self.planet.update_planet_resources()
         if self.cost is None:
             self.price()
-        if METAL in self.cost and self.cost[METAL] > self.planet.get_resource(METAL):
-            return False
-        if CRISTAL in self.cost and self.cost[CRISTAL] > self.planet.get_resource(CRISTAL):
-            return False
-        if DEUTERIUM in self.cost and self.cost[DEUTERIUM] > self.planet.get_resource(DEUTERIUM):
-            return False
+        return self.planet.has_more_resources_than(self.cost)
 
+    def affordability_not_changed_by(self, other_task):
+        # Should not be necessary but just in case
+        if self.cost is None:
+            self.price()
+        if other_task.cost is None:
+            other_task.price()
+        
+        combined_cost = dict(self.cost)
+        for resource in other_task.cost:
+            if resource in combined_cost:
+                combined_cost[resource] + other_task[resource]
+            else:
+                combined_cost[resource] = other_task[resource]
+            if not self.planet.has_more_resources_than({resource: combined_cost[resource]}) and \
+                other_task.cost[resource] > 0:
+                return False
+        
         return True
 
     def __str__(self):
@@ -201,8 +214,6 @@ class MasterScheduler():
         self.treatEvent(eventToLookAt)
         return True
 
-
-
     def treatEvent(self, event):
         log.info('Treating event : {}'.format(str(event)))
         if event.callback is not None:
@@ -269,13 +280,28 @@ class MasterScheduler():
         else:
             # Find the highest priority tasks that can be executed
             top_priority = top_priority_tasks[0].priority
-            highest_priority_tasks = self.filter_top_priority_tasks(self.filter_executable_tasks(self.filter_affordable_tasks(planet_tasks)))
-            log.debug('Highest priority executable and  affordable tasks on planet {} : {}'.format(planetName, '\n'.join(map(str, highest_priority_tasks))))
+            highest_priority_executable_tasks = self.filter_top_priority_tasks(self.filter_executable_tasks(self.filter_affordable_tasks(planet_tasks)))
+            log.debug('Highest priority executable and  affordable tasks on planet {} : {}'.format(planetName, '\n'.join(map(str, highest_priority_executable_tasks))))
 
-            if len(highest_priority_tasks) == 0:
+            if len(highest_priority_executable_tasks) == 0:
                 log.info('No executable task on planet {}'.format(planetName))
                 return None
-            best_alternative = random.choice(highest_priority_tasks)
+            # Checking if there is a task that will not change the affordability ot top priority tasks
+            non_impacting_tasks = []
+            for t in highest_priority_executable_tasks:
+                has_no_impact = True
+                for top_priority_task in top_priority_tasks:
+                    has_no_impact = has_no_impact and top_priority_task.affordability_not_changed_by(t)
+                if has_no_impact:
+                    non_impacting_tasks.append(t)
+            if len(non_impacting_tasks) > 0:
+                # Pick one of those task regardless of priority differential
+                non_impacting_chosen_task = random.choice(non_impacting_tasks)
+                log.info('Picking task which does not impact affordability of top priority task : {}'.format(non_impacting_chosen_task))
+                return non_impacting_chosen_task
+            else:
+                log.info('No money non impacting task found')
+            best_alternative = random.choice(highest_priority_executable_tasks)
             best_executable_priority = best_alternative.priority
             # Roll the dice and decide if the lower priority task is executed or if we wait to gather money/a slot for the top priority one
             alpha = 0.5

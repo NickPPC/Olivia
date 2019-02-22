@@ -112,6 +112,15 @@ class Planet():
     def get_resource(self, resource_type):
         return self.resources[resource_type]
 
+    def has_more_resources_than(self, cost):
+        if METAL in cost and cost[METAL] > self.get_resource(METAL):
+            return False
+        if CRISTAL in cost and cost[CRISTAL] > self.get_resource(CRISTAL):
+            return False
+        if DEUTERIUM in cost and cost[DEUTERIUM] > self.get_resource(DEUTERIUM):
+            return False
+        return True
+
     def can_execute_task(self, task):
         log.debug('checking for execution of {}:\n{}'.format(task, task.__dict__))
         if get_type(task.object) == BUILDINGS:
@@ -225,7 +234,6 @@ class Empire():
                 return self.planets[task.planet.name].can_execute_task(task)
         if get_type(task.object) == SHIPYARD:
             return self.planets[task.planet.name].can_execute_task(task)
-
 
     def __str__(self):
         description = str(self._tech_level) + '\n'
