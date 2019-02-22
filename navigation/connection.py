@@ -51,4 +51,14 @@ def connect(config):
             action.find_elements_by_tag_name('span')[0].get_attribute('innerHTML') == 'Jouer':
             action.click()
             log.info('Choosing the universe')
-            return
+            break
+
+        time.sleep(5)
+    # Closing first tab
+    del driver().window_handles[0]
+    driver().switch_to.window(driver().window_handles[0])
+    time.sleep(1)
+    driver().close()
+    time.sleep(2)
+    # Focusing on open tab
+    driver().switch_to.window(driver().window_handles[0])

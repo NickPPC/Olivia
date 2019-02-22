@@ -8,6 +8,7 @@ from pyvirtualdisplay import Display
 import json
 import navigation.connection as connection
 import utils
+from utils import get_driver as driver
 import logic.scheduler as scheduler
 
 log = utils.get_module_logger(__name__)
@@ -33,6 +34,18 @@ parser.add_argument("-m", "--manual", action="store_true", help="Manual mode, do
 parser.add_argument("-f", "--configFile", help="path to the JSON config file", default='config.json')
 
 
+def run(args):
+
+    init_driver(config, no_display)
+    time.sleep(2)
+
+    if not args.manual:
+        masterScheduler = scheduler.MasterScheduler(config)
+        # State when connecting
+        log.info(masterScheduler.empire)
+        masterScheduler.run()
+
+
 
 if __name__ == '__main__':
 
@@ -46,40 +59,21 @@ if __name__ == '__main__':
     with open(args.configFile) as file:
         config = json.load(file)
 
-    driver = init_driver(config, no_display)
-    time.sleep(5)
-    # Closing first tab
-    del driver.window_handles[0]
-    driver.switch_to.window(driver.window_handles[0])
-    time.sleep(1)
-    driver.close()
-    time.sleep(2)
-    # Focusing on open tab
-    driver.switch_to.window(driver.window_handles[0])
+    retry_count = 5
 
-    time.sleep(2)
+    while(retry_count > 0):
+        try:
+            run(args)
+            retry_count = 0
+        except Exception as e:
+            log.error('Something went very wrong : {}\n{}'.format(str(e), traceback.format_exc()))
+            driver().quit()
+            retry_count -= 1
 
-    #Removing ad
-    try:
-        cloaseAdZone = driver.find_element_by_class_name('openX_int_closeButton')
-        closeAdButton = cloaseAdZone.find_element_by_tag_name('a')
-        closeAdButton.click()
-    except:
-        pass
+    if no_display:
+        display.stop()
+        driver().quit()
+
+    
 
 
-    try:
-        if not args.manual:
-            masterScheduler = scheduler.MasterScheduler(config)
-            # State when connecting
-            log.info(masterScheduler.empire)
-            masterScheduler.run()
-
-
-        if no_display:
-            driver.quit()
-            display.stop()
-
-    except Exception as e:
-        log.error('Something went very wrong : {}\n{}'.format(str(e), traceback.format_exc()))
-        driver.quit()
