@@ -70,7 +70,7 @@ def scan_system(galaxy, system):
                 if rank_elements:
                     player_ranking = rank_elements[0].find_elements_by_tag_name('a')[0]\
                         .get_attribute('innerHTML')
-                    planets_found.append((planet_address, player_ranking, inactive))
+                    planets_found.append((planet_address, int(player_ranking), inactive))
                     i += 1                    
                 
         log.debug('{} planets found at {}:{}'.format(str(len(planets_found)), galaxy, system))
