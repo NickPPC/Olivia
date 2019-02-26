@@ -55,7 +55,7 @@ class Goal():
         resultingTasks = []
         dependency_id = None
         for i in range(n):
-            priority = self.priority * math.pow(1.2, i)
+            priority = self.priority * math.pow(1.2, n - i - 1)
             if dependency_id:
                 newTask = Task(self.object, self.planet, priority, self.count, dependencies=[dependency_id])
             else:
@@ -83,6 +83,8 @@ class Task():
         self.id = generateTaskId()
         if dependencies is not None:
             self.dependencies = dependencies
+        else:
+            self.dependencies = []
         self.preexecuteCall = preexecuteCall
         self.postexecuteCall = postexecuteCall
     # TODO: add dependencies
@@ -131,9 +133,9 @@ class Task():
         combined_cost = dict(self.cost)
         for resource in other_task.cost:
             if resource in combined_cost:
-                combined_cost[resource] + other_task[resource]
+                combined_cost[resource] + other_task.cost[resource]
             else:
-                combined_cost[resource] = other_task[resource]
+                combined_cost[resource] = other_task.cost[resource]
             if not self.planet.has_more_resources_than({resource: combined_cost[resource]}) and \
                 other_task.cost[resource] > 0:
                 return False
@@ -153,8 +155,8 @@ class MasterScheduler():
         self.empire = planet.Empire()
         self.tasks = self.getStartingTasks(configs)
         self.events = self.seedEvents()
-        log.debug('\n'.join(map(str, self.events)))
-        log.debug('\n'.join(map(str, self.tasks)))
+        log.debug('Events:\n' + '\n'.join(map(str, self.events)))
+        log.debug('Tasks:\n' + '\n'.join(map(str, self.tasks)))
 
     def lockResearchLab(self):
         #TODO
@@ -170,7 +172,8 @@ class MasterScheduler():
             #Buildings
             seeds.append(Event(Event.BUILDING_IN_PROGRESS, buildings.getNextTimeAvailability(p) - time.time(), p))
             #Research
-            seeds.append(Event(Event.RESEARCH_IN_PROGRESS, research.getNextTimeAvailability() - time.time(), p))
+            if self.empire.planets[p].get_building_level(buildings.RESEARCH_LAB) > 0:
+                seeds.append(Event(Event.RESEARCH_IN_PROGRESS, research.getNextTimeAvailability() - time.time(), p))
         #TODO: fleet movement
         #TODO: shipyard construction
         #TODO: periodic check
@@ -234,9 +237,11 @@ class MasterScheduler():
         if task_to_execute is not None:
             self.processTask(task_to_execute)
         else:
-            # If not doing anything create a periodic check to trigger construction
-            self.newEvent(Event(Event.PERIODIC_CHECK, 3 * 3600, event.planetName))
-            log.info('Not doing anything at this time on {}'.format(event.planetName))
+            # If there is nothing else to do stop now, otherwise add periodic check
+            if len(self.get_planet_tasks(event.planetName)) > 0:
+                # If not doing anything create a periodic check to trigger construction
+                self.newEvent(Event(Event.PERIODIC_CHECK, 3 * 3600, event.planetName))
+                log.info('Not doing anything at this time on {}'.format(event.planetName))
 
 
     def processTask(self, task):
@@ -288,15 +293,18 @@ class MasterScheduler():
                 return None
             # Checking if there is a task that will not change the affordability ot top priority tasks
             non_impacting_tasks = []
-            for t in highest_priority_executable_tasks:
+            executable_tasks = self.filter_executable_tasks(self.filter_affordable_tasks(planet_tasks))
+            for t in executable_tasks:
                 has_no_impact = True
                 for top_priority_task in top_priority_tasks:
                     has_no_impact = has_no_impact and top_priority_task.affordability_not_changed_by(t)
                 if has_no_impact:
                     non_impacting_tasks.append(t)
+            log.debug('Executable money non impacting tasks on planet {} : {}'.format(planetName, '\n'.join(map(str, non_impacting_tasks))))
+
             if len(non_impacting_tasks) > 0:
-                # Pick one of those task regardless of priority differential
-                non_impacting_chosen_task = random.choice(non_impacting_tasks)
+                # Pick one of those tasks regardless of priority differential
+                non_impacting_chosen_task = random.choice(self.filter_top_priority_tasks(non_impacting_tasks))
                 log.info('Picking task which does not impact affordability of top priority task : {}'.format(non_impacting_chosen_task))
                 return non_impacting_chosen_task
             else:
@@ -336,10 +344,15 @@ class MasterScheduler():
             log.error('Impossible to removing task {}'.format(taskId))
         else:
             self.tasks.pop(index)
+        # Remove dependencies
+        for t in self.tasks:
+            if taskId in t.dependencies:
+                t.dependencies.remove(taskId)
+
 
     def get_planet_tasks(self, planetName):
         return sorted(
-            [t for t in self.tasks if t.planet.name == planetName],
+            [t for t in self.tasks if (t.planet.name == planetName and len(t.dependencies) == 0)],
             key=lambda x: x.priority, reverse=True)
 
     # def filter_tasks_by_type(self, planetName, type):
