@@ -61,7 +61,7 @@ class Planet():
 
         self._shipyard_locked = False
         self._shipyard_queue_empty = True
-        self._building_slot_available = True
+        self._building_slot_available = False
 
         self.name = name
         self.full_update()
@@ -177,7 +177,7 @@ class Empire():
         ARMOR_TECH : 0,
     }
 
-    _lab_lock = False
+    _lab_lock = True
 
     
     def __init__(self):
