@@ -7,6 +7,7 @@ import navigation.fleet as fleet
 import time
 from utils import *
 from model.events import Event, get_type
+from logic.fleet import FleetManager
 
 random.seed()
 currentTaskId = 0
@@ -157,6 +158,9 @@ class MasterScheduler():
         self.events = self.seedEvents()
         log.debug('Events:\n' + '\n'.join(map(str, self.events)))
         log.debug('Tasks:\n' + '\n'.join(map(str, self.tasks)))
+        self.fleet_manager = FleetManager(configs['fleet'])
+        # self.fleet_manager.test_spy()
+
 
     def lockResearchLab(self):
         #TODO

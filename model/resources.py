@@ -1,4 +1,4 @@
 METAL = 'metal'
-CRISTAL = 'cristal'
+CRISTAL = 'crystal'
 DEUTERIUM = 'deuterium'
 ENERGY = 'energy'
