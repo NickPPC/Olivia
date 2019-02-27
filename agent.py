@@ -31,6 +31,7 @@ def init_driver(config, no_display):
 parser = argparse.ArgumentParser()
 parser.add_argument("-d", "--display", action="store_true", help="set display of what is happening")
 parser.add_argument("-m", "--manual", action="store_true", help="Manual mode, does not start scheduler")
+parser.add_argument("-x", "--experiment", action="store_true", help="Experimental mode, disable restart on error")
 parser.add_argument("-f", "--configFile", help="path to the JSON config file", default='config.json')
 
 
@@ -60,6 +61,9 @@ if __name__ == '__main__':
         config = json.load(file)
 
     retry_count = 5
+
+    if args.experiment:
+        retry_count = 1
 
     while(retry_count > 0):
         try:
