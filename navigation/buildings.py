@@ -9,12 +9,17 @@ from model.events import Event
 
 log = get_module_logger(__name__)
 
+opened_building = ''
 
 def go_to_resources():
-    menu.navigate_to_tab(RESOURCES)
+    global opened_building
+    if menu.navigate_to_tab(RESOURCES):
+        opened_building = ''
 
 def go_to_facilities():
-    menu.navigate_to_tab(FACILITIES)
+    global opened_building
+    if menu.navigate_to_tab(FACILITIES):
+        opened_building = ''
 
 def go_to(buildingName):
     if buildingTranslation[buildingName][0] == RESOURCES:
@@ -91,8 +96,13 @@ def get_in_progress_building(planet_name):
         return None
 
 def _clickBuildingElement(buildingName):
+    global opened_building
 
     go_to(buildingName)
+
+    if opened_building == buildingName:
+        # Already opened
+        return
 
     buildingElement = driver().find_element_by_id(buildingTranslation[buildingName][1]) \
         .find_element_by_class_name(buildingTranslation[buildingName][2])
@@ -100,6 +110,8 @@ def _clickBuildingElement(buildingName):
         buildingElement.find_element_by_id('details').click()
     elif buildingTranslation[buildingName][0] == FACILITIES:
         buildingElement.find_element_by_id('details' + buildingTranslation[buildingName][2][-2:]).click()
+
+    opened_building = buildingName
 
 def getBuildingCost(planetName, buildingName):
     menu.navigate_to_planet(planetName)

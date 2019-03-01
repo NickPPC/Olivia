@@ -7,9 +7,12 @@ from model.events import Event
 
 log = get_module_logger(__name__)
 
+opened_tech = ''
 
 def go_to_research():
-    menu.navigate_to_tab(RESEARCH)
+    global opened_tech
+    if menu.navigate_to_tab(RESEARCH):
+        opened_tech = ''
 
 def _extract_level_technology(techName):
 
@@ -69,9 +72,16 @@ def get_in_progress_research():
         return None
 
 def clickTechElement(planetName, techName):
+    global opened_tech
     menu.navigate_to_planet(planetName)
     go_to_research()
+
+    if opened_tech == techName:
+        # Already opened
+        return
+
     driver().find_element_by_id(researchTranslation[techName]).click()
+    opened_tech = techName
 
 def getTechCost(planetName, techName):
     menu.navigate_to_planet(planetName)

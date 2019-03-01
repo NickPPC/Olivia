@@ -90,8 +90,6 @@ class Planet():
 
     def update_planet_resources(self):
         menu.navigate_to_planet(self.name)
-        # Force refresh of resources (after fleet deliveries)
-        menu.navigate_to_overview()
         self.resources[METAL] = int(driver().find_element_by_id('resources_metal').get_attribute('innerHTML').replace('.', ''))
         self.resources[CRISTAL] = int(driver().find_element_by_id('resources_crystal').get_attribute('innerHTML').replace('.', ''))
         self.resources[DEUTERIUM] = int(driver().find_element_by_id('resources_deuterium').get_attribute('innerHTML').replace('.', ''))
@@ -122,7 +120,7 @@ class Planet():
         return True
 
     def can_execute_task(self, task):
-        log.debug('checking for execution of {}:\n{}'.format(task, task.__dict__))
+        # log.debug('checking for execution of {}:\n{}'.format(task, task.__dict__))
         if get_type(task.object) == BUILDINGS:
             # Check special building nanite factory
             if task.object == NANITE_FACTORY:
@@ -226,7 +224,7 @@ class Empire():
         if get_type(task.object) == RESEARCH:
             return  not self._lab_lock
         if get_type(task.object) == BUILDINGS:
-            log.debug('checking for execution of building task {}:\n{}'.format(task, task.__dict__))
+            # log.debug('checking for execution of building task {}:\n{}'.format(task, task.__dict__))
             # Check special building research lab
             if task.object == RESEARCH_LAB:
                 return (not self._lab_lock) and self.planets[task.planet.name].can_execute_task(task)
