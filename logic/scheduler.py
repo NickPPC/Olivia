@@ -8,6 +8,7 @@ import time
 from utils import *
 from model.events import Event, get_type
 from logic.fleet import FleetManager
+from model.dependencies import dependencies
 
 random.seed()
 currentTaskId = 0
@@ -39,19 +40,23 @@ class Goal():
     def is_shipyard(self):
         return get_type(self.object) == shipyard.SHIPYARD
 
-    def level_to_build(self):
+    def level_to_build(self, already_planned_tasks):
+        already_planned = 0
+        if self.object in already_planned_tasks:
+            already_planned = already_planned_tasks[self.object]
+
         if self.is_building():
-            return (self.level - self.planet.get_building_level(self.object))
+            return (self.level - self.planet.get_building_level(self.object) - already_planned)
         if self.is_research():
-            return (self.level - self.planet.empire.get_research_level(self.object))
+            return (self.level - self.planet.empire.get_research_level(self.object) - already_planned)
+        #TODO : handle shipyard
         log.warn('Unhandled type for this goal ({} : {}), default to one level'.format(get_type(self.object), self.object))
         return 1
 
-    def generateTasks(self):
-        #TODO: handle same element different levels with different priority
+    def generateTasks(self, already_planned_tasks):
         n = 1
         if self.level > 0:
-            n = self.level_to_build()
+            n = self.level_to_build(already_planned_tasks)
 
         resultingTasks = []
         dependency_id = None
@@ -65,9 +70,41 @@ class Goal():
             dependency_id = newTask.id
             resultingTasks.append(newTask)
 
-        # TODO: cascade requirement as new linked tasks
+        prerequisite_tasks = self.generate_prerequisite(already_planned_tasks)
+
+        for prereq in prerequisite_tasks:
+            for task in resultingTasks:
+                task.dependencies.append(prereq.id)
+        
+        resultingTasks.extend(prerequisite_tasks)
+
         log.debug('Goal {} translated in {} tasks'.format(str(self), len(resultingTasks)))
         return resultingTasks
+
+    def generate_prerequisite(self, already_planned_tasks):
+        if self.object not in dependencies:
+            log.debug('No depencies for {}'.format(self.object))
+            return []
+
+        prereqs = []
+        for dep in dependencies[self.object]:
+            # Check if prerquisite filled
+            dep_goal = Goal(dep[0], self.planet, self.priority, dep[1])
+            dep_tasks = dep_goal.generateTasks(already_planned_tasks)
+            prereqs.extend(dep_tasks)
+            already_planned_tasks.extend(dep_tasks)
+
+        return prereqs
+
+    @staticmethod
+    def translate_goals(goals):
+        # TODO
+        # TODO: handle same element different levels with different priority
+
+        tasks = []
+        for g in goals:
+            tasks.extend(g.generateTasks(tasks))
+        return tasks
 
     def __str__(self):
         description = 'Goal {} on {} with priority {}, level {}'.format(self.object, self.planet.name, self.priority, self.level)
@@ -174,10 +211,17 @@ class MasterScheduler():
         seeds = []
         for p in self.empire.planets:
             #Buildings
-            seeds.append(Event(Event.BUILDING_IN_PROGRESS, buildings.getNextTimeAvailability(p) - time.time(), p))
+            next_availability = buildings.getNextTimeAvailability(p) - time.time()
+            seeds.append(Event(Event.BUILDING_IN_PROGRESS, next_availability, p))
+            if next_availability < 0:
+                self.empire.planets[p].release_building_slot()
+
             #Research
             if self.empire.planets[p].get_building_level(buildings.RESEARCH_LAB) > 0:
-                seeds.append(Event(Event.RESEARCH_IN_PROGRESS, research.getNextTimeAvailability() - time.time(), p))
+                next_availability = research.getNextTimeAvailability() - time.time()
+                seeds.append(Event(Event.RESEARCH_IN_PROGRESS, next_availability, p))
+                if next_availability < 0:
+                    self.empire.unlock_research_lab()
         #TODO: fleet movement
         #TODO: shipyard construction
         #TODO: periodic check
@@ -196,10 +240,7 @@ class MasterScheduler():
                 count = g['count']
             goals.append(Goal(g['what'], self.empire.planets[g['planet']], g['priority'], level, count))
 
-        tasks = []
-        for goal in goals:
-            tasks.extend(goal.generateTasks())
-        return tasks
+        return Goal.translate_goals(goals)
 
 
     def getNextEvent(self):

@@ -4,7 +4,6 @@ from utils import get_driver as driver
 
 log = utils.get_module_logger(__name__)
 
-#TODO: deal with loading problem and reload
 def connect(config):
     #homepage
     driver().get(config['homeUrl'])
