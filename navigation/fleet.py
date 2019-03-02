@@ -2,21 +2,18 @@ from utils import get_driver as driver
 import navigation.menu as menu
 from model.shipyard import *
 import time
-#TODO: spy
-#TODO: attack
-#TODO: transport
 
 
 def spy(galaxy, system, planetId, probes):
-    _send_fleet(galaxy, system,  planetId,{SPY_PROBE : probes}, {}, 'missionButton6')
-
+    return _send_fleet(galaxy, system,  planetId,{SPY_PROBE : probes}, {}, 'missionButton6')
 
 def transport(galaxy, system, planetId, fleet, resources):
-    _send_fleet(galaxy, system,  planetId, fleet, resources, 'missionButton3')
+    return _send_fleet(galaxy, system,  planetId, fleet, resources, 'missionButton3')
 
 def attack(galaxy, system, planetId, fleet):
-    _send_fleet(galaxy, system,  planetId, fleet, {}, 'missionButton1')
+    return _send_fleet(galaxy, system,  planetId, fleet, {}, 'missionButton1')
 
+# TODO: have it return an event
 def _send_fleet(galaxy, system, planetId, fleet, resources, action_id):
     menu.navigate_to_fleet()
     time.sleep(0.05)

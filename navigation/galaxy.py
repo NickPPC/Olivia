@@ -4,6 +4,7 @@ from utils import *
 from utils import get_driver as driver
 from selenium.webdriver.common.action_chains import ActionChains
 import selenium.common.exceptions
+from model.target import Target
 
 log = get_module_logger(__name__)
 
@@ -61,7 +62,7 @@ def scan_system(galaxy, system):
         for row in rows:
             if 'empty_filter' not in row.get_attribute('class') and i < len(player_details):
                 elements = row.find_elements_by_tag_name('td')
-                planet_address = '{}:{}:{}'.format(galaxy, system, elements[0].get_attribute('innerHTML'))
+                planet_id = elements[0].get_attribute('innerHTML')
                 # Check inactivity
                 inactive = False
                 if 'inactive_filter' in row.get_attribute('class'):
@@ -70,7 +71,7 @@ def scan_system(galaxy, system):
                 if rank_elements:
                     player_ranking = rank_elements[0].find_elements_by_tag_name('a')[0]\
                         .get_attribute('innerHTML')
-                    planets_found.append((planet_address, int(player_ranking), inactive))
+                    planets_found.append(Target(galaxy, system, planet_id, int(player_ranking), inactive))
                     i += 1                    
                 
         log.debug('{} planets found at {}:{}'.format(str(len(planets_found)), galaxy, system))

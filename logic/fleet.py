@@ -11,12 +11,6 @@ log = get_module_logger(__name__)
 MAX_RANK = 'max_rank'
 SEARCH_DISTANCE = 'search_distance'
 
-class SpyingReport():
-
-    def __init__(self):
-        # TODO: make configurable
-        self._expires_at = time.time() + 1800
-
 class FleetManager():
 
     _targets = []
@@ -32,13 +26,13 @@ class FleetManager():
 
     def search_for_targets(self, distance, max_rank):
         log.info('Search area : {} systems'.format(distance))
-        planets = crawl_galaxy(distance)
-        log.info('{} planets in the search area'.format(len(planets)))
+        targets = crawl_galaxy(distance)
+        log.info('{} planets in the search area'.format(len(targets)))
         # Filtering for inactive
-        inactive_targets = [p for p in planets if p[2]]
+        inactive_targets = [t for t in targets if t.is_inactive()]
         log.info('{} inactive targets in the search area'.format(len(inactive_targets)))
         # Filtering out low ranking players
-        self._targets = [p for p in inactive_targets if p[1] > max_rank]
+        self._targets = [t for t in inactive_targets if t.get_rank() > max_rank]
         log.info('{} inactive targets with a ranking higher than {} in this serach area'.format(len(self._targets), max_rank))
         log.debug('\n'.join(map(str, self._targets)))
 
