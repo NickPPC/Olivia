@@ -20,6 +20,7 @@ class Event():
     ERROR = 'Error !!'
     SHIPYARD_CONSTRUCTION_IN_PROGRESS = 'Shipard construction in progress'
     PERIODIC_CHECK = 'Periodic check'
+    INITIAL_CHECK = 'Initial check at startup'
     #TODO: create more event type (attacks, ...)
 
 

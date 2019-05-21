@@ -119,4 +119,5 @@ def researchTech(planetName, techName):
 
     except Exception as e:
         log.error('Impossible to do this research {} on {}\n {} : {}'.format(techName, planetName, type(e).__name__, str(e)))
+        menu.navigate_to_overview()
         return Event(Event.ERROR, 0, planetName, 'Impossible to research this technology, {}'.format(str(e)))

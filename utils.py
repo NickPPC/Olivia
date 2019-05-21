@@ -96,17 +96,17 @@ def cost_extraction(costListElement):
     cost = {METAL: 0, CRISTAL: 0, DEUTERIUM: 0}
     try:
         cost[METAL] = int(costListElement.find_element_by_class_name('metal').find_element_by_class_name('cost').get_attribute(
-            'innerHTML').replace('.', ''))
+            'innerHTML').replace('.', '').replace('M', '000000'))
     except:
         pass
     try:
         cost[CRISTAL] = int(costListElement.find_element_by_class_name('crystal').find_element_by_class_name('cost').get_attribute(
-            'innerHTML').replace('.', ''))
+            'innerHTML').replace('.', '').replace('M', '000000'))
     except:
         pass
     try:
         cost[DEUTERIUM] = int(costListElement.find_element_by_class_name('deuterium').find_element_by_class_name(
-            'cost').get_attribute('innerHTML').replace('.', ''))
+            'cost').get_attribute('innerHTML').replace('.', '').replace('M', '000000'))
     except:
         pass
 
@@ -123,7 +123,10 @@ def level_extraction(levelElementText):
         else:
             levelElementText = levelElementText[:i - 1]
             levelElementText.strip()
-    return int(levelElementText)
+
+    # Remove dots
+    levelElementText = levelElementText.replace('.', '')
+    return int(levelElementText.strip())
 
 def remove_ad():
     #Removing ad

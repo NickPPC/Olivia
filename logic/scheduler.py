@@ -40,20 +40,34 @@ class Goal():
     def is_shipyard(self):
         return get_type(self.object) == shipyard.SHIPYARD
 
+    def count_to_build(self):
+        if get_type(self.object) == shipyard.SHIPYARD:
+            #TODO deal with ships
+            return self.count - self.planet.get_defense_count(self.object)
+        
+        return self.count
+
+
     def level_to_build(self, already_planned_tasks):
         already_planned = 0
-        if self.object in already_planned_tasks:
-            already_planned = already_planned_tasks[self.object]
+        for planned_task in already_planned_tasks:
+            if planned_task.object == self.object:
+                already_planned += 1
 
         if self.is_building():
             return (self.level - self.planet.get_building_level(self.object) - already_planned)
         if self.is_research():
             return (self.level - self.planet.empire.get_research_level(self.object) - already_planned)
-        #TODO : handle shipyard
         log.warn('Unhandled type for this goal ({} : {}), default to one level'.format(get_type(self.object), self.object))
         return 1
 
-    def generateTasks(self, already_planned_tasks):
+    def generate_tasks(self, already_planned_tasks):
+
+        count = self.count_to_build()
+        if count <= 0:
+            # Nothing to do
+            return []
+
         n = 1
         if self.level > 0:
             n = self.level_to_build(already_planned_tasks)
@@ -62,10 +76,11 @@ class Goal():
         dependency_id = None
         for i in range(n):
             priority = self.priority * math.pow(1.2, n - i - 1)
+            
             if dependency_id:
-                newTask = Task(self.object, self.planet, priority, self.count, dependencies=[dependency_id])
+                newTask = Task(self.object, self.planet, priority, count, dependencies=[dependency_id])
             else:
-                newTask = Task(self.object, self.planet, priority, self.count)
+                newTask = Task(self.object, self.planet, priority, count)
 
             dependency_id = newTask.id
             resultingTasks.append(newTask)
@@ -90,7 +105,10 @@ class Goal():
         for dep in dependencies[self.object]:
             # Check if prerquisite filled
             dep_goal = Goal(dep[0], self.planet, self.priority, dep[1])
-            dep_tasks = dep_goal.generateTasks(already_planned_tasks)
+            if dep[0] == buildings.RESEARCH_LAB or dep[0] in research.researchTranslation:
+                # For techs and research lab move requirement on planet with best lab
+                dep_goal.planet = self.planet.empire.get_best_research_planet()
+            dep_tasks = dep_goal.generate_tasks(already_planned_tasks)
             prereqs.extend(dep_tasks)
             already_planned_tasks.extend(dep_tasks)
 
@@ -103,7 +121,7 @@ class Goal():
 
         tasks = []
         for g in goals:
-            tasks.extend(g.generateTasks(tasks))
+            tasks.extend(g.generate_tasks(list(tasks)))
         return tasks
 
     def __str__(self):
@@ -139,21 +157,26 @@ class Task():
         elif get_type(self.object) == research.RESEARCH:
             log.debug('Researching task : {}'.format(self.__str__()))
             resultingEvent = research.researchTech(self.planet.name, self.object)
+        elif get_type(self.object) == shipyard.SHIPYARD:
+            log.debug('Shipyard task : {} {} on {}'.format(self.count, self.object, self.planet.name))
+            resultingEvent = shipyard.build_device(self.planet.name, self.object, self.count)
         else:
             log.warn('This type of task ({}) is not yet implemented'.format(get_type(self.object)))
-        #TODO:other cases (shipyard, fleet ...)
+        #TODO:other cases (fleet ...)
 
         resultingEvent.callback = self.postexecuteCall
         return resultingEvent
 
     def price(self):
+        log.debug('Pricing {}'.format(self.__str__()))
         if get_type(self.object) == buildings.BUILDINGS:
             self.cost = buildings.getBuildingCost(self.planet.name, self.object)
         elif get_type(self.object) == research.RESEARCH:
             self.cost = research.getTechCost(self.planet.name, self.object)
+        elif get_type(self.object) == shipyard.SHIPYARD:
+            self.cost = shipyard.getDeviceCost(self.object, self.count)
         else:
             log.warn('This type of task pricing ({}) is not yet implemented'.format(get_type(self.object)))
-        #TODO:other cases (fleet ...)
 
     def isAffordable(self):
         self.planet.update_planet_resources()
@@ -198,13 +221,6 @@ class MasterScheduler():
         self.fleet_manager = FleetManager(configs['fleet'])
         # self.fleet_manager.test_spy()
 
-
-    def lockResearchLab(self):
-        #TODO
-        pass
-    def unlockResearchLab(self):
-        #TODO
-        pass
     #TODO lock/unlock shipyard
 
     def seedEvents(self):
@@ -212,18 +228,26 @@ class MasterScheduler():
         for p in self.empire.planets:
             #Buildings
             next_availability = buildings.getNextTimeAvailability(p) - time.time()
-            seeds.append(Event(Event.BUILDING_IN_PROGRESS, next_availability, p))
-            if next_availability < 0:
-                self.empire.planets[p].release_building_slot()
+            if next_availability > 0:
+                self.empire.planets[p].take_building_slot()
+                seeds.append(Event(Event.BUILDING_IN_PROGRESS, next_availability, p))
 
             #Research
             if self.empire.planets[p].get_building_level(buildings.RESEARCH_LAB) > 0:
                 next_availability = research.getNextTimeAvailability() - time.time()
-                seeds.append(Event(Event.RESEARCH_IN_PROGRESS, next_availability, p))
-                if next_availability < 0:
-                    self.empire.unlock_research_lab()
+                if next_availability > 0:
+                    seeds.append(Event(Event.RESEARCH_IN_PROGRESS, next_availability, p))
+                    self.empire.lock_research_lab()
+
+            # First event to trigger potential construction
+            seeds.append(Event(Event.INITIAL_CHECK, 0, p))
+
+            # # Shipyard
+            # if self.empire.planets[p].get_building_level(buildings.SHIPYARD) > 0:
+            #     #TODO : extract when queue empty
+            #     seeds.append(Event(Event.SHIPYARD_CONSTRUCTION_IN_PROGRESS, 0, p))
+
         #TODO: fleet movement
-        #TODO: shipyard construction
         #TODO: periodic check
 
         return seeds
@@ -275,18 +299,22 @@ class MasterScheduler():
             self.empire.unlock_research_lab()
         elif event.type == Event.PERIODIC_CHECK:
             pass
+        elif event.type == Event.SHIPYARD_CONSTRUCTION_IN_PROGRESS:
+            # TODO : update shipyard queue
+            pass
         else:
             log.warn('Not yet implemented for {} event :\n{}'.format(event.type, event))
 
         task_to_execute = self.pickTask(event.planetName)
-        if task_to_execute is not None:
+        while task_to_execute is not None:
             self.processTask(task_to_execute)
-        else:
-            # If there is nothing else to do stop now, otherwise add periodic check
-            if len(self.get_planet_tasks(event.planetName)) > 0:
-                # If not doing anything create a periodic check to trigger construction
-                self.newEvent(Event(Event.PERIODIC_CHECK, 3 * 3600, event.planetName))
-                log.info('Not doing anything at this time on {}'.format(event.planetName))
+            task_to_execute = self.pickTask(event.planetName)
+
+        # If there is nothing else to do stop now, otherwise add periodic check
+        if len(self.get_planet_tasks(event.planetName)) > 0:
+            # If not doing anything create a periodic check to trigger construction
+            self.newEvent(Event(Event.PERIODIC_CHECK, 3 * 3600, event.planetName))
+            log.info('Not doing anything at this time on {}'.format(event.planetName))
 
 
     def processTask(self, task):
@@ -294,34 +322,37 @@ class MasterScheduler():
         resultingEvent = task.execute()
         self.newEvent(resultingEvent)
         if resultingEvent.type != Event.ERROR:
-            self.removeAchievedTask(task.id)
+            resultingEvent.callback = lambda : self.remove_achieved_task(task.id)
+            self.remove_launched_task(task.id)
 
             if get_type(task.object) == buildings.BUILDINGS:
                 self.empire.planets[task.planet.name].take_building_slot()
                 if task.object == buildings.RESEARCH_LAB:
                     self.empire.lock_research_lab()
-                if task.object == buildings.NANITE_FACTORY:
+                if task.object == buildings.NANITE_FACTORY or task.object == buildings.SHIPYARD:
                     self.empire.planets[task.planet.name].lock_shipyard()
             if get_type(task.object) == research.RESEARCH:
                 self.empire.lock_research_lab()
-            # TODO: shipyard
-
+            if get_type(task.object) == shipyard.SHIPYARD:
+                # Extend the shipyard is done event
+                #TODO
+                pass
 
 
     def pickTask(self, planetName):
         planet_tasks = self.get_planet_tasks(planetName)
         if len(planet_tasks) == 0:
-            log.info('There are no task on this planet')
+            log.warn('There are no task on this planet')
             return None
 
         log.debug('Tasks considered for planet {} :\n{}'.format(planetName, '\n'.join(map(str, planet_tasks))))
 
         top_priority_tasks = self.filter_top_priority_tasks(planet_tasks)
         log.debug('Top priority tasks on planet {} : {}'.format(planetName, '\n'.join(map(str, top_priority_tasks))))
-        top_priority_affordable_tasks = self.filter_affordable_tasks(top_priority_tasks)
-        log.debug('Affordable top priority tasks on planet {} : {}'.format(planetName, '\n'.join(map(str, top_priority_affordable_tasks))))
-        top_priority_executable_tasks = self.filter_executable_tasks(top_priority_affordable_tasks)
-        log.debug('Top priority executable and  affordable tasks on planet {} : {}'.format(planetName, '\n'.join(map(str, top_priority_executable_tasks))))
+        top_priority_available_tasks = self.filter_executable_tasks(top_priority_tasks)
+        log.debug('Possible top priority tasks on planet {} : {}'.format(planetName, '\n'.join(map(str, top_priority_available_tasks))))
+        top_priority_executable_tasks = self.filter_affordable_tasks(top_priority_available_tasks)
+        log.debug('Top priority executable and affordable tasks on planet {} : {}'.format(planetName, '\n'.join(map(str, top_priority_executable_tasks))))
 
         if len(top_priority_executable_tasks) > 0:
             # Execute a top priority task if possible
@@ -330,7 +361,7 @@ class MasterScheduler():
         else:
             # Find the highest priority tasks that can be executed
             top_priority = top_priority_tasks[0].priority
-            highest_priority_executable_tasks = self.filter_top_priority_tasks(self.filter_executable_tasks(self.filter_affordable_tasks(planet_tasks)))
+            highest_priority_executable_tasks = self.filter_top_priority_tasks(self.filter_affordable_tasks(self.filter_executable_tasks(planet_tasks)))
             log.debug('Highest priority executable and  affordable tasks on planet {} : {}'.format(planetName, '\n'.join(map(str, highest_priority_executable_tasks))))
 
             if len(highest_priority_executable_tasks) == 0:
@@ -338,7 +369,7 @@ class MasterScheduler():
                 return None
             # Checking if there is a task that will not change the affordability ot top priority tasks
             non_impacting_tasks = []
-            executable_tasks = self.filter_executable_tasks(self.filter_affordable_tasks(planet_tasks))
+            executable_tasks = self.filter_affordable_tasks(self.filter_executable_tasks(planet_tasks))
             for t in executable_tasks:
                 has_no_impact = True
                 for top_priority_task in top_priority_tasks:
@@ -353,7 +384,7 @@ class MasterScheduler():
                 log.info('Picking task which does not impact affordability of top priority task : {}'.format(non_impacting_chosen_task))
                 return non_impacting_chosen_task
             else:
-                log.info('No money non impacting task found')
+                log.debug('No money non impacting task found')
             best_alternative = random.choice(highest_priority_executable_tasks)
             best_executable_priority = best_alternative.priority
             # Roll the dice and decide if the lower priority task is executed or if we wait to gather money/a slot for the top priority one
@@ -380,7 +411,7 @@ class MasterScheduler():
         self.events.append(event)
 
 
-    def removeAchievedTask(self, taskId):
+    def remove_launched_task(self, taskId):
         index = None
         for i in range(len(self.tasks)):
             if self.tasks[i].id == taskId:
@@ -389,10 +420,12 @@ class MasterScheduler():
             log.error('Impossible to removing task {}'.format(taskId))
         else:
             self.tasks.pop(index)
+
+    def remove_achieved_task(self, task_id):
         # Remove dependencies
         for t in self.tasks:
-            if taskId in t.dependencies:
-                t.dependencies.remove(taskId)
+            if task_id in t.dependencies:
+                t.dependencies.remove(task_id)
 
 
     def get_planet_tasks(self, planetName):

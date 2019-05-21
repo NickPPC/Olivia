@@ -1,6 +1,5 @@
 import time
 
-import logic.planet as planet
 import navigation.menu as menu
 from model.shipyard import SHIPYARD, DEFENSE, deviceTranslation, deviceCost
 from utils import get_module_logger, get_driver as driver, level_extraction
@@ -49,21 +48,24 @@ def _click_device_element(deviceName):
 
     driver().find_element_by_id(deviceTranslation[deviceName][1]).click()
 
+def getNextTimeAvailability():
+    # TODO
+    return 0
 
 
-def build_device(self, deviceName, n):
+
+def build_device(planet_name, deviceName, n):
+    menu.navigate_to_planet(planet_name)
+    go_to(deviceName)
 
     if deviceName not in deviceTranslation:
-        return Event(Event.ERROR, 0, self.planetName, 'Device is not valid')
-
-
-    #TODO
+        return Event(Event.ERROR, 0, planet_name, 'Device is not valid')
 
     try:
 
         _click_device_element(deviceName)
         time.sleep(3)
-        cost = getDeviceCost(deviceName)
+        cost = getDeviceCost(deviceName, n)
 
         # Fill quantity
         driver().find_element_by_id('number').send_keys(str(n))
@@ -71,8 +73,8 @@ def build_device(self, deviceName, n):
         driver().find_element_by_class_name('build-it').click()
 
         log.info('Construction of {} {} started for {} metal, {} cristal and {} deuterium'.format(n, deviceName,
-                                                        n * cost[METAL], n * cost[CRISTAL], n * cost[DEUTERIUM]))
-        return Event(Event.SHIPYARD_CONSTRUCTION_IN_PROGRESS, self.nextTimeAvailable - time.time(), self.planetName, deviceName)
+                                                        cost[METAL], cost[CRISTAL], cost[DEUTERIUM]))
+        return Event(Event.SHIPYARD_CONSTRUCTION_IN_PROGRESS, getNextTimeAvailability() - time.time(), planet_name, deviceName)
     except Exception as e:
-        log.error('Impossible to building {} {} on {}\n {} : {}'.format(n, deviceName, self.planetName, type(e).__name__, str(e)))
-        return Event(Event.ERROR, 0, self.planetName, 'Impossible to upgrade this building, {}'.format(str(e)))
+        log.error('Impossible to building {} {} on {}\n {} : {}'.format(n, deviceName,planet_name, type(e).__name__, str(e)))
+        return Event(Event.ERROR, 0, planet_name, 'Impossible to build this device, {}'.format(str(e)))

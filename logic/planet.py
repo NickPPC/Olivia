@@ -2,11 +2,13 @@ import logging
 
 from navigation.buildings import extract_facilities_buildings_level, extract_resources_buildings_level, get_in_progress_building
 from navigation.research import  extract_research_level, get_in_progress_research
+from navigation.shipyard import extract_quantity_device
 import navigation.menu as menu
 from utils import get_driver as driver
 from utils import *
 from model.buildings import *
 from model.research import *
+from model.shipyard import *
 from model.events import get_type
 
 log = get_module_logger(__name__)
@@ -59,9 +61,22 @@ class Planet():
             SPACE_DOCK: 0
         }
 
+        self._defense = {
+            MISSILE_LAUCHER : 0,
+            LIGHT_LASER_DEFENSE : 0,
+            HEAVY_LASER_DEFENSE : 0,
+            ION_CANON : 0, 
+            GAUSS_CANON : 0,
+            PLASMA_CANON : 0,
+            SMALL_SHIELD : 0,
+            LARGE_SHIELD : 0,
+            DEFENSE_MISSILE : 0,
+            ATTACK_MISSILE :0
+        }
+
         self._shipyard_locked = False
         self._shipyard_queue_empty = True
-        self._building_slot_available = False
+        self._building_slot_available = True
 
         self.name = name
         self.full_update()
@@ -86,7 +101,9 @@ class Planet():
 
         log.debug('Building levels of {} updated'.format(self.name))
 
-
+    def update_defense(self):
+        for defense in self._defense:
+            self._defense[defense] = extract_quantity_device(self.name, defense)
 
     def update_planet_resources(self):
         menu.navigate_to_planet(self.name)
@@ -100,9 +117,16 @@ class Planet():
         menu.navigate_to_planet(self.name)
         self.update_planet_resources()
         self.update_buildings_level()
+        self.update_defense()
 
     def get_building_level(self, building):
         return self._building_level[building]
+
+    def get_defense_count(self, defense):
+        if defense not in self._defense:
+            log.error('{} not in planet defense'.format(defense))
+            return 0
+        return self._defense[defense]
 
     def set_building_level(self, building, level):
         self._building_level[building] = level
@@ -149,7 +173,8 @@ class Planet():
         self._shipyard_queue_empty = True
 
     def __str__(self):
-        description = '{}\nResources : {}\nProduction : {}\n\nBuildings : {}'.format(self.name, self.resources, self.production, self._building_level)
+        description = '{}\nResources : {}\nProduction : {}\nBuildings : {}\nDefesne : {}'\
+            .format(self.name, self.resources, self.production, self._building_level, self._defense)
         return description
 
 
@@ -175,7 +200,7 @@ class Empire():
         ARMOR_TECH : 0,
     }
 
-    _lab_lock = True
+    _lab_lock = False
 
     
     def __init__(self):
@@ -193,6 +218,18 @@ class Empire():
         for planetName in planetNames:
             planet = Planet(planetName)
             self.add_planet(planet)
+
+    def get_best_research_planet(self):
+        best = None
+        max_level = 0
+        
+        for p in self.planets:
+            n = self.planets[p].get_building_level(RESEARCH_LAB)
+            if  n > max_level:
+                max_level = n
+                best = self.planets[p]
+        
+        return best
 
     def update_research_level(self):
         research_levels = extract_research_level()

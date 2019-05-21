@@ -102,7 +102,10 @@ def _clickBuildingElement(buildingName):
 
     if opened_building == buildingName:
         # Already opened
+        log.debug('{} already opened'.format(buildingName))
         return
+
+    log.debug('Clicking {}, previously on {}'.format(buildingName, opened_building))
 
     buildingElement = driver().find_element_by_id(buildingTranslation[buildingName][1]) \
         .find_element_by_class_name(buildingTranslation[buildingName][2])
@@ -118,7 +121,7 @@ def getBuildingCost(planetName, buildingName):
     go_to(buildingName)
 
     _clickBuildingElement(buildingName)
-    time.sleep(2)
+    time.sleep(3)
     return _get_current_building_cost()
     
 def _get_current_building_cost():
@@ -148,4 +151,5 @@ def upgrade_building(planetName, buildingName):
         return Event(Event.BUILDING_IN_PROGRESS, getNextTimeAvailability(planetName) - time.time(), planetName, buildingName)
     except Exception as e:
         log.error('Impossible to upgrade this building {} on {}\n {} : {}'.format(buildingName, planetName, type(e).__name__, str(e)))
+        menu.navigate_to_overview()
         return Event(Event.ERROR, 0, planetName, 'Impossible to upgrade this building, {}'.format(str(e)))
